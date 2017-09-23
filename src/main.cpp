@@ -8,6 +8,7 @@
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
+#include "spline.h"
 
 using namespace std;
 
@@ -242,7 +243,43 @@ int main()
                     vector<double> next_x_vals;
                     vector<double> next_y_vals;
 
+                    vector<double> smooth_road_x;
+                    vector<double> smooth_road_y;
+
                     // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
+                    
+                    // TODO: smoothen road path between the waypoints using Spline
+                    double s_inc = 2;
+
+                    tk::spline s;
+                    vector<double>  to_interpolate_x;
+                    vector<double>  to_interpolate_y;
+                    for(int i = 0; i < 50; i++)
+                    {
+                        double next_s = car_s + i*s_inc;
+                        double next_d = 6;
+                        vector<double> xy = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x,  map_waypoints_y);
+                        to_interpolate_x.push_back(xy[0]);
+                        to_interpolate_y.push_back(xy[1]);
+                    }
+
+                    s.set_points(to_interpolate_x,to_interpolate_y, true);    // Calculate interpolated function
+
+
+                    // TODO: Calculate and control SDC vehicle speed and lane position
+                        // Use a Jerk minimizing function to control the vehicle speed (use the two past points for continuity)  
+                    // TODO: Calculate time to collision against other vehicles in Frenet
+                    // TODO: Design cost function
+                    double dist_inc = 0.4;
+                    for(int i = 0; i < 50; i++)
+                    {
+                        double next_s = car_s + (i+1)*dist_inc;
+                        double next_d = 6;
+                        vector<double> xy = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x,  map_waypoints_y);
+                        next_x_vals.push_back(xy[0]);
+                        next_y_vals.push_back(xy[1]);
+                    }
+
                     msgJson["next_x"] = next_x_vals;
                     msgJson["next_y"] = next_y_vals;
 
@@ -250,6 +287,8 @@ int main()
 
                     //this_thread::sleep_for(chrono::milliseconds(1000));
                     ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+                    std::cout<< "DOWN:" << j<<std::endl;
+                    std::cout<< "UP:" << msg<<std::endl;
                 }
             }
             else
