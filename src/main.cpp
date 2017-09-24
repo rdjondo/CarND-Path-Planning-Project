@@ -39,11 +39,12 @@ string hasData(string s)
     return "";
 }
 
-double distance(double x1, double y1, double x2, double y2)
+inline double distance(double x1, double y1, double x2, double y2)
 {
     return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
-int ClosestWaypoint(double x, double y, const vector<double> &maps_x, const vector<double> &maps_y)
+
+inline int ClosestWaypoint(double x, double y, const vector<double> &maps_x, const vector<double> &maps_y)
 {
 
     double closestLen = 100000; //large number
@@ -64,7 +65,7 @@ int ClosestWaypoint(double x, double y, const vector<double> &maps_x, const vect
     return closestWaypoint;
 }
 
-int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x, const vector<double> &maps_y)
+inline int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x, const vector<double> &maps_y)
 {
 
     int closestWaypoint = ClosestWaypoint(x, y, maps_x, maps_y);
@@ -145,6 +146,8 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s, const vec
     int wp2 = (prev_wp + 1) % maps_x.size();
 
     double heading = atan2((maps_y[wp2] - maps_y[prev_wp]), (maps_x[wp2] - maps_x[prev_wp]));
+
+    if(fabs(maps_x[wp2] - maps_x[prev_wp])<0.01) std::cout<<"   X DOES NOT CHANGE !!!!!!   "<<std::endl;
     // the x,y,s along the segment
     double seg_s = (s - maps_s[prev_wp]);
 
@@ -158,6 +161,38 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s, const vec
 
     return {x, y};
 }
+
+// Transform waypoints in map coordinates to vehicle coordinates.
+inline vector<double> mapCoordToVehicleCoordinates(double car_x,
+		double car_y, double yaw, double x_way, double y_way) {
+
+	// Fix new coordinate axis origin to vehicle's coordinates
+	double x = x_way - car_x;
+	double y = y_way - car_y;
+
+	// Limit yaw angle
+
+	// Rotate coordinates to vehicle's coordinates
+	double x_veh = x * cos(yaw) - y *sin(yaw);
+	double y_veh = x * sin(yaw) + y *cos(yaw) ;
+	return {x_veh, y_veh};
+}
+
+// Transform waypoints in vehicle coordinates to map coordinates.
+inline vector<double> mapPtVehCoordToMapCoordinates(double car_x,
+		double car_y, double yaw, double x_way, double y_way){
+
+	// Rotate coordinates to vehicle's coordinates
+	double x = x_way * cos(-yaw) - y_way *sin(-yaw);
+	double y = x_way * sin(-yaw) + y_way *cos(-yaw) ;
+
+	// Fix new coordinate axis origin to map's coordinates
+	double x_map = x + car_x;
+	double y_map = y + car_y;
+
+	return {x_map, y_map};
+}
+
 
 int main()
 {
@@ -246,36 +281,73 @@ int main()
                     vector<double> smooth_road_x;
                     vector<double> smooth_road_y;
 
-                    // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
-                    
                     // TODO: smoothen road path between the waypoints using Spline
-                    double s_inc = 2;
+                    double s_inc = 0.5;
 
-                    tk::spline s;
+                    static tk::spline spline_func;
                     vector<double>  to_interpolate_x;
                     vector<double>  to_interpolate_y;
-                    for(int i = 0; i < 50; i++)
+                    to_interpolate_x.clear();
+                    to_interpolate_y.clear();
+                    
+                    std::cout<<" X interp: ";
+                    car_yaw = car_yaw/180.0*pi();
+                    //car_yaw = fmod(car_yaw+2*pi(), pi());
+                    double old_x = -10000.0;
+                    for(int i = 1; i < 50; i++)
                     {
                         double next_s = car_s + i*s_inc;
                         double next_d = 6;
                         vector<double> xy = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x,  map_waypoints_y);
-                        to_interpolate_x.push_back(xy[0]);
-                        to_interpolate_y.push_back(xy[1]);
+                        xy = mapCoordToVehicleCoordinates(car_x, car_y, car_yaw, xy[0], xy[1]);
+                        if(old_x<xy[0]){
+                        	to_interpolate_x.push_back(xy[0]);
+                        	to_interpolate_y.push_back(xy[1]);
+                        }
+                        std::cout<<xy[0]<<", ";
+                        old_x = xy[0];
+                    }
+                    std::cout<<std::endl;
+
+                    bool reverse_sign = false;
+
+                    for (int i = 0; i < to_interpolate_x.size()-1; ++i) {
+                    	if(to_interpolate_x[i]>to_interpolate_x[i+1]){
+                    		reverse_sign = true;
+                    		std::cout<<"OOOPS, "<<"car_yaw="<<car_yaw<<"; to_interpolate_x:"<<
+                    				to_interpolate_x[i]<<" is greater than "<<
+                    				to_interpolate_x[i+1]<<std::endl;
+                    		break;
+                    	}
+
+					}
+
+                    if(reverse_sign){
+                    	for(int i=0; i < to_interpolate_x.size();++i){
+                    		to_interpolate_x[i] = -to_interpolate_x[i];
+                    	}
                     }
 
-                    s.set_points(to_interpolate_x,to_interpolate_y, true);    // Calculate interpolated function
+                    spline_func.set_points(to_interpolate_x,to_interpolate_y);    // Calculate interpolated function
 
 
                     // TODO: Calculate and control SDC vehicle speed and lane position
                         // Use a Jerk minimizing function to control the vehicle speed (use the two past points for continuity)  
                     // TODO: Calculate time to collision against other vehicles in Frenet
                     // TODO: Design cost function
+
+                    
+                    // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
+                    
                     double dist_inc = 0.4;
-                    for(int i = 0; i < 50; i++)
+                    for(int i = 0; i < 60; i++)
                     {
                         double next_s = car_s + (i+1)*dist_inc;
                         double next_d = 6;
-                        vector<double> xy = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x,  map_waypoints_y);
+                        vector<double> xy_veh = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x,  map_waypoints_y);
+                        vector<double> xy = mapCoordToVehicleCoordinates(car_x, car_y, car_yaw, xy_veh[0], xy_veh[1]);
+                        double y = spline_func(xy[0]);
+                        xy = mapPtVehCoordToMapCoordinates(car_x, car_y, car_yaw, xy[0], y);
                         next_x_vals.push_back(xy[0]);
                         next_y_vals.push_back(xy[1]);
                     }
@@ -287,8 +359,8 @@ int main()
 
                     //this_thread::sleep_for(chrono::milliseconds(1000));
                     ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-                    std::cout<< "DOWN:" << j<<std::endl;
-                    std::cout<< "UP:" << msg<<std::endl;
+                    // std::cout<< "DOWN:" << j<<std::endl;
+                    // std::cout<< "UP:" << msg<<std::endl;
                 }
             }
             else
