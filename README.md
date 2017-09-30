@@ -16,10 +16,19 @@ The highway's waypoints loop around so the frenet s value, distance along the ro
 
 1. Clone this repo.
 2. Make a build directory: `mkdir build && cd build`
-3. Compile: `cmake .. && make`
+3. Compile: `cmake ../src && make`
 4. Run it: `./path_planning`.
 
 Here is the data provided from the Simulator to the C++ Program
+
+I changed the location of the CMakeLists.txt file following a warning message from cmake:
+    CMake Warning in CMakeLists.txt:
+    - The build directory is a subdirectory of the source directory.
+
+    - This is not supported well by Eclipse.  It is strongly recommended to use a
+      build directory which is a sibling of the source directory.
+
+
 
 #### Main car's localization Data (No Noise)
 

@@ -48,7 +48,7 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /media/puma/1406fd6e-9f82-424c-b49e-6617808e3799/CarND/CarND-Path-Planning-Project
+CMAKE_SOURCE_DIR = /media/puma/1406fd6e-9f82-424c-b49e-6617808e3799/CarND/CarND-Path-Planning-Project/src
 
 # The top-level build directory on which CMake was run.
 CMAKE_BINARY_DIR = /media/puma/1406fd6e-9f82-424c-b49e-6617808e3799/CarND/CarND-Path-Planning-Project/build
@@ -123,32 +123,59 @@ path_planning/fast:
 	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/build
 .PHONY : path_planning/fast
 
-src/main.o: src/main.cpp.o
+main.o: main.cpp.o
 
-.PHONY : src/main.o
+.PHONY : main.o
 
 # target to build an object file
-src/main.cpp.o:
-	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/src/main.cpp.o
-.PHONY : src/main.cpp.o
+main.cpp.o:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/main.cpp.o
+.PHONY : main.cpp.o
 
-src/main.i: src/main.cpp.i
+main.i: main.cpp.i
 
-.PHONY : src/main.i
+.PHONY : main.i
 
 # target to preprocess a source file
-src/main.cpp.i:
-	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/src/main.cpp.i
-.PHONY : src/main.cpp.i
+main.cpp.i:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/main.cpp.i
+.PHONY : main.cpp.i
 
-src/main.s: src/main.cpp.s
+main.s: main.cpp.s
 
-.PHONY : src/main.s
+.PHONY : main.s
 
 # target to generate assembly for a file
-src/main.cpp.s:
-	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/src/main.cpp.s
-.PHONY : src/main.cpp.s
+main.cpp.s:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/main.cpp.s
+.PHONY : main.cpp.s
+
+utils.o: utils.cpp.o
+
+.PHONY : utils.o
+
+# target to build an object file
+utils.cpp.o:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/utils.cpp.o
+.PHONY : utils.cpp.o
+
+utils.i: utils.cpp.i
+
+.PHONY : utils.i
+
+# target to preprocess a source file
+utils.cpp.i:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/utils.cpp.i
+.PHONY : utils.cpp.i
+
+utils.s: utils.cpp.s
+
+.PHONY : utils.s
+
+# target to generate assembly for a file
+utils.cpp.s:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/utils.cpp.s
+.PHONY : utils.cpp.s
 
 # Help Target
 help:
@@ -159,9 +186,12 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... path_planning"
-	@echo "... src/main.o"
-	@echo "... src/main.i"
-	@echo "... src/main.s"
+	@echo "... main.o"
+	@echo "... main.i"
+	@echo "... main.s"
+	@echo "... utils.o"
+	@echo "... utils.i"
+	@echo "... utils.s"
 .PHONY : help
 
 
