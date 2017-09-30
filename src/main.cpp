@@ -116,53 +116,7 @@ int main()
                     vector<double> smooth_road_y;
 
                     // TODO: smoothen road path between the waypoints using Spline
-                    double s_inc = 0.5;
-
-                    static tk::spline spline_func;
-                    vector<double>  to_interpolate_x;
-                    vector<double>  to_interpolate_y;
-                    to_interpolate_x.clear();
-                    to_interpolate_y.clear();
                     
-                    std::cout<<" X interp: ";
-                    car_yaw = car_yaw/180.0*pi();
-                    //car_yaw = fmod(car_yaw+2*pi(), pi());
-                    double old_x = -10000.0;
-                    for(int i = 1; i < 50; i++)
-                    {
-                        double next_s = car_s + i*s_inc;
-                        double next_d = 6;
-                        vector<double> xy = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x,  map_waypoints_y);
-                        xy = mapCoordToVehicleCoordinates(car_x, car_y, car_yaw, xy[0], xy[1]);
-                        if(old_x<xy[0]){
-                        	to_interpolate_x.push_back(xy[0]);
-                        	to_interpolate_y.push_back(xy[1]);
-                        }
-                        std::cout<<xy[0]<<", ";
-                        old_x = xy[0];
-                    }
-                    std::cout<<std::endl;
-
-                    bool reverse_sign = false;
-
-                    for (int i = 0; i < to_interpolate_x.size()-1; ++i) {
-                    	if(to_interpolate_x[i]>to_interpolate_x[i+1]){
-                    		reverse_sign = true;
-                    		std::cout<<"OOOPS, "<<"car_yaw="<<car_yaw<<"; to_interpolate_x:"<<
-                    				to_interpolate_x[i]<<" is greater than "<<
-                    				to_interpolate_x[i+1]<<std::endl;
-                    		break;
-                    	}
-
-					}
-
-                    if(reverse_sign){
-                    	for(int i=0; i < to_interpolate_x.size();++i){
-                    		to_interpolate_x[i] = -to_interpolate_x[i];
-                    	}
-                    }
-
-                    spline_func.set_points(to_interpolate_x,to_interpolate_y);    // Calculate interpolated function
 
 
                     // TODO: Calculate and control SDC vehicle speed and lane position
@@ -173,15 +127,15 @@ int main()
                     
                     // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
                     
-                    double dist_inc = 0.4;
-                    for(int i = 0; i < 60; i++)
+                    double dist_inc = 4;
+                    for(int i = 0; i < 50; i++)
                     {
                         double next_s = car_s + (i+1)*dist_inc;
                         double next_d = 6;
                         vector<double> xy_veh = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x,  map_waypoints_y);
                         vector<double> xy = mapCoordToVehicleCoordinates(car_x, car_y, car_yaw, xy_veh[0], xy_veh[1]);
-                        double y = spline_func(xy[0]);
-                        xy = mapPtVehCoordToMapCoordinates(car_x, car_y, car_yaw, xy[0], y);
+
+                        xy = mapPtVehCoordToMapCoordinates(car_x, car_y, car_yaw, xy[0], xy[1]);
                         next_x_vals.push_back(xy[0]);
                         next_y_vals.push_back(xy[1]);
                     }
