@@ -218,3 +218,17 @@ void load_map(vector<double> &map_waypoints_x, vector<double> &map_waypoints_y,
 		map_waypoints_dy.push_back(d_y);
 	}
 }
+
+/**
+ *  Computing polynomial evaluation using coefficients [a0, a1, .. an] on x :
+ *  f(x) = a0 + a1 *x + .. + an * x^n
+ */
+double polyeval(vector<double> coeffs, double x) {
+	double f = coeffs[0];
+	double x_power = x;
+	for (int deg = 1; deg < coeffs.size(); ++deg) {
+		f += coeffs[deg] * x_power;
+		x_power = x_power * x;
+	}
+	return f;
+}

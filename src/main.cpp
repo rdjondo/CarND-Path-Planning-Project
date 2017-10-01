@@ -49,9 +49,6 @@ inline vector<double> mapPtVehCoordToMapCoordinates(double car_x,
 	return {x_map, y_map};
 }
 
-// The max s value before wrapping around the track back to 0
-double max_s = 6945.554;
-
 int main()
 {
     uWS::Hub h;
@@ -113,8 +110,8 @@ int main()
                     vector<double> next_x_vals;
                     vector<double> next_y_vals;
 
-                    vector<double> smooth_road_x;
-                    vector<double> smooth_road_y;
+                    vector<double> next_s_vals;
+                    vector<double> next_d_vals;
 
                     // DONE: smoothen road path between the waypoints using Spline
                     
@@ -132,9 +129,32 @@ int main()
 
                     
                     // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
+
+                    double sk = car_s;
+                    double sk_dot = car_speed;
+                    double sk_double_dot = 0.0;
+                    double sk_triple_dot = 0.0;
+
+                    double sT = 100;
+                    double sT_dot = 22;
+                    double sT_double_dot = 0.0;
+                    double sT_triple_dot = 0.0;
+                    int N_samples = 50;
+                    double delta_t = 0.02;
+
+                    vector< double> start = {sk, sk_dot, sk_double_dot, sk_triple_dot };
+                    vector <double> end  = {sT, sT_dot, sT_double_dot, sT_triple_dot };
+                    double T = N_samples * delta_t;
+                    bool isJerkDefined = true;
+
+                    vector<double> coeffs = JMT(start, end, T, isJerkDefined);
+                    if(!isJerkDefined){
+                    	end_trajec = coeffs.back();
+
+                    }
                     
-                    double dist_inc = 0.5;
-                    for(int i = 0; i < 50; i++)
+                    double dist_inc = 0.4;
+                    for(int i = 0; i < N_samples; i++)
                     {
                         double next_s = car_s + (i+1)*dist_inc;
                         double next_d = 6;
@@ -144,6 +164,8 @@ int main()
                         xy = mapPtVehCoordToMapCoordinates(car_x, car_y, car_yaw, xy[0], xy[1]);
                         next_x_vals.push_back(xy[0]);
                         next_y_vals.push_back(xy[1]);
+                        next_s_vals.push_back(next_s);
+                        next_d_vals.push_back(next_d);
                     }
 
                     msgJson["next_x"] = next_x_vals;
