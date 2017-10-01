@@ -123,6 +123,33 @@ path_planning/fast:
 	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/build
 .PHONY : path_planning/fast
 
+jmt.o: jmt.cpp.o
+
+.PHONY : jmt.o
+
+# target to build an object file
+jmt.cpp.o:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/jmt.cpp.o
+.PHONY : jmt.cpp.o
+
+jmt.i: jmt.cpp.i
+
+.PHONY : jmt.i
+
+# target to preprocess a source file
+jmt.cpp.i:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/jmt.cpp.i
+.PHONY : jmt.cpp.i
+
+jmt.s: jmt.cpp.s
+
+.PHONY : jmt.s
+
+# target to generate assembly for a file
+jmt.cpp.s:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/jmt.cpp.s
+.PHONY : jmt.cpp.s
+
 main.o: main.cpp.o
 
 .PHONY : main.o
@@ -186,6 +213,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... path_planning"
+	@echo "... jmt.o"
+	@echo "... jmt.i"
+	@echo "... jmt.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

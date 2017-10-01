@@ -171,11 +171,18 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
 	double dx_ds = (spline_road_x(s + eps) - x) / eps;
 	double dy_ds = (spline_road_y(s + eps) - y) / eps;
 
+	/*
+	 * Now let's find how to translate laterally the car by d
+	 */
 
-	// Given the map we know that the norm cannot be 0
+	// Given the map we know that the norm of the heading of the spline cannot be 0
+	// because there is no stop point
 	double norm_inv = 1 / sqrt(dx_ds * dx_ds + dy_ds * dy_ds);
+
+	// This vector represents the heading of the vehicle with a norm that equals d
 	vector<double> heading = { dx_ds * norm_inv * d, dy_ds * norm_inv * d };
 
+	// Let's rotate the heading by 90 degrees to find the
 	vector<double> normal = { heading[1], -heading[0] };
 
 

@@ -10,6 +10,7 @@
 #include "json.hpp"
 #include "spline.h"
 #include "utils.h"
+#include "jmt.h"
 
 using namespace std;
 
@@ -115,19 +116,24 @@ int main()
                     vector<double> smooth_road_x;
                     vector<double> smooth_road_y;
 
-                    // TODO: smoothen road path between the waypoints using Spline
+                    // DONE: smoothen road path between the waypoints using Spline
                     
-
 
                     // TODO: Calculate and control SDC vehicle speed and lane position
                         // Use a Jerk minimizing function to control the vehicle speed (use the two past points for continuity)  
+                    // Let's compute the Jerk minimization in the Frenet referential
+
+
+
                     // TODO: Calculate time to collision against other vehicles in Frenet
+
+
                     // TODO: Design cost function
 
                     
                     // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
                     
-                    double dist_inc = 4;
+                    double dist_inc = 0.5;
                     for(int i = 0; i < 50; i++)
                     {
                         double next_s = car_s + (i+1)*dist_inc;
