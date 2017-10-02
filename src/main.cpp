@@ -153,26 +153,18 @@ main ()
                       vector <double> end =
                         { sT, sT_dot, sT_double_dot, sT_triple_dot};
                       double T = N_samples * delta_t;
-                      bool isJerkDefined = false;
 
-                      vector<double> coeffs = JMT(start, end, T, isJerkDefined);
-                      if(isJerkDefined)
-                        {
-                          cout<<"Coeffs = "<<coeffs[0]<<" "<<coeffs[6]<<" car_v="<< sk_dot <<endl;
-                          coeffs.pop_back();
+                      vector<double> coeffs = JMT(start, end, T);
 
-                        }
-                      else
-                        {
 
-                          cout<<"coeffs = ["<<coeffs[0]<<", "<<coeffs[1]<<", "<<coeffs[2]<<", "<<coeffs[3]
+                      cout<<"coeffs = ["<<coeffs[0]<<", "<<coeffs[1]<<", "<<coeffs[2]<<", "<<coeffs[3]
                                                          <<", "<<coeffs[4]<<", "<<coeffs[5]<<"] "<<endl;
-                        }
+
 
                       double dist_inc = 0.4;
                       for(int i = 0; i < N_samples; i++)
                         {
-                          double next_s = polyeval(coeffs, (i+1)*delta_t);
+                          double next_s = polyval(coeffs, (i+1)*delta_t);
                           double next_d = 6;
                           vector<double> xy_veh = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
                           vector<double> xy = mapCoordToVehicleCoordinates(car_x, car_y, car_yaw, xy_veh[0], xy_veh[1]);

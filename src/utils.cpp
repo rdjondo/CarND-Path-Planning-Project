@@ -118,8 +118,7 @@ vector<double> getFrenet(double x, double y, double theta,
 	// calculate s value
 	double frenet_s = 0;
 	for (int i = 0; i < prev_wp; i++) {
-		frenet_s += distance(maps_x[i], maps_y[i], maps_x[i + 1],
-				maps_y[i + 1]);
+		frenet_s += distance(maps_x[i], maps_y[i], maps_x[i + 1], maps_y[i + 1]);
 	}
 
 	frenet_s += distance(0, 0, proj_x, proj_y);
@@ -185,7 +184,6 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
 	// Let's rotate the heading by 90 degrees to find the
 	vector<double> normal = { heading[1], -heading[0] };
 
-
 	return {x + normal[0], y+normal[1]};
 }
 
@@ -223,7 +221,7 @@ void load_map(vector<double> &map_waypoints_x, vector<double> &map_waypoints_y,
  *  Computing polynomial evaluation using coefficients [a0, a1, .. an] on x :
  *  f(x) = a0 + a1 *x + .. + an * x^n
  */
-double polyeval(vector<double> coeffs, double x) {
+double polyval(vector<double> &coeffs, double x) {
 	double f = coeffs[0];
 	double x_power = x;
 	for (int deg = 1; deg < coeffs.size(); ++deg) {
@@ -231,4 +229,13 @@ double polyeval(vector<double> coeffs, double x) {
 		x_power = x_power * x;
 	}
 	return f;
+}
+
+vector<double> polyder(vector<double> &coeffs) {
+	/* Computing 1st derivative evaluation on the polynomial */
+	vector<double>  Df_coeffs(coeffs.size()-1);
+	for(int deg=1; deg<coeffs.size(); ++deg) {
+		Df_coeffs[deg-1] += deg * coeffs[deg] ;
+	}
+	return Df_coeffs;
 }

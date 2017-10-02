@@ -16,7 +16,7 @@ using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-vector<double> JMT(vector< double> &start, vector <double> &end, double T, bool isJerkDefined)
+vector<double> JMT(vector< double> &start, vector <double> &end, double T)
 {
     /*
     Calculate the Jerk Minimizing Trajectory that connects the initial state
@@ -94,7 +94,6 @@ vector<double> JMT(vector< double> &start, vector <double> &end, double T, bool 
     MatrixXd Tpk(3,3);
     VectorXd ak(3);
 
-    if(!isJerkDefined){
 		s_lim <<  sT        - ( sk + sk_dot * T + sk_double_dot/2 * T*T ) ,
 				  sT_dot    - ( 0  + sk_dot     + sk_double_dot   * T    ),
 			  sT_double_dot - ( 0  + 0          + sk_double_dot          );
@@ -105,23 +104,6 @@ vector<double> JMT(vector< double> &start, vector <double> &end, double T, bool 
 
 		ak = Tpk.colPivHouseholderQr().solve(s_lim);
 		coeff = {sk, sk_dot, sk_double_dot/2, ak(0), ak(1), ak(2)};
-
-    } else {
-
-    	s_lim <<                - ( sk + sk_dot * T + sk_double_dot/2 * T*T  + sk_triple_dot/6 * T*T*T ) ,
-    			  sT_dot        - ( 0  + sk_dot     + sk_double_dot   * T    + sk_triple_dot/2 * T*T ) ,
-    			  sT_triple_dot - (0   +  0         + 0                      + sk_triple_dot          );
-
-    	Tpk <<  -1  ,  T*T*T*T    ,  T*T*T*T*T,
-    			 0  ,  4 * T*T*T  ,  5 * T*T*T*T,
-    			 0  ,  24 * T     ,  60 * T*T ;
-
-    	ak = Tpk.colPivHouseholderQr().solve(s_lim);
-
-    	// NOTE: Here coeffs is 7 element long!!! ak(0) is the final location of the jerk minimizing motion
-    	coeff = {sk, sk_dot, sk_double_dot/2, sk_triple_dot/6, ak(1), ak(2), ak(0)};
-
-    }
 
     return coeff;
 
