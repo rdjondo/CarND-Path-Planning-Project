@@ -235,7 +235,7 @@ vector<double> polyder(vector<double> &coeffs) {
 	/* Computing 1st derivative evaluation on the polynomial */
 	vector<double>  Df_coeffs(coeffs.size()-1);
 	for(int deg=1; deg<coeffs.size(); ++deg) {
-		Df_coeffs[deg-1] += deg * coeffs[deg] ;
+		Df_coeffs.push_back(deg * coeffs[deg]) ;
 	}
 	return Df_coeffs;
 }
