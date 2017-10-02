@@ -1,6 +1,10 @@
 function coeffs = jmt(sk,sk_dot,sk_double_dot,sT,...
  sT_dot, sT_double_dot,T)
 
+if abs(T)<=0.3
+warning('Time horizon is too short. May lead to inexact calculation')
+end
+
 s_lim =[  sT      - ( sk + sk_dot * T + sk_double_dot/2 * T*T ) ,
       sT_dot      - ( 0  + sk_dot     + sk_double_dot   * T    ),
     sT_double_dot - ( 0  + 0          + sk_double_dot          ) ];
@@ -11,6 +15,5 @@ Tpk =  [T*T*T    , T*T*T*T   ,  T*T*T*T*T   ,
 
 ak = Tpk\ (s_lim);
 coeffs = [sk, sk_dot, sk_double_dot/2, ak(1), ak(2), ak(3)];
-disp(coeffs')
 
 coeffs = coeffs(end:-1:1);
