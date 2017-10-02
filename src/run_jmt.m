@@ -1,21 +1,25 @@
 clear
 
-sk = 0;
-sk_dot =0;
+sk = 1;
+sk_dot = 10;
 sk_double_dot = 0.0;
 sk_triple_dot = 0.0;
 
-sT = sk + 60;
-% Increase sT when acceleration decreases first, then increases (around T/2) then decreases
-% Reduce sT when increases first then decreases (around T/2) and then increases (around T)
+sT = sk + 62;
+% Increase sT when on jerk(t), a5 is negative (and -a4/(2*a5) is between 0
+% and T)
+% Reduce sT when jerk on jerk(t), a5 is positive and (-a4/(2*a5) is between
+% 0 and T)
+% Stop when a5 is very small
 
 sT_dot = 25;
-sT_double_dot = 0.0;
-sT_triple_dot = 0.0;
+sT_double_dot = 3.0;
 N_samples = 250;
 delta_t = 0.02;
 
-T = N_samples*delta_t
+virtual_acceleration = 4;
+T = (sT_dot-sk_dot)/virtual_acceleration;
+%N_samples*delta_t
 
 coeffs = jmt(sk,sk_dot,sk_double_dot,sT,sT_dot, sT_double_dot,T)
 
