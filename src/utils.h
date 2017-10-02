@@ -33,4 +33,6 @@ void load_map(std::vector<double> &map_waypoints_x,
 		std::vector<double> &map_waypoints_dx,
 		std::vector<double> &map_waypoints_dy);
 
+double polyeval(std::vector<double> coeffs, double x) ;
+
 #endif /* UTILS_H_ */

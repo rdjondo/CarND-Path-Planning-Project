@@ -1,0 +1,16 @@
+function coeffs = jmt(sk,sk_dot,sk_double_dot,sT,...
+ sT_dot, sT_double_dot,T)
+
+s_lim =[  sT      - ( sk + sk_dot * T + sk_double_dot/2 * T*T ) ,
+      sT_dot      - ( 0  + sk_dot     + sk_double_dot   * T    ),
+    sT_double_dot - ( 0  + 0          + sk_double_dot          ) ];
+
+Tpk =  [T*T*T    , T*T*T*T   ,  T*T*T*T*T   ,
+       3 * T*T  , 4 * T*T*T ,  5 * T*T*T*T ,
+       6 * T    , 12 * T*T  ,  20 * T*T*T  ];
+
+ak = Tpk\ (s_lim);
+coeffs = [sk, sk_dot, sk_double_dot/2, ak(1), ak(2), ak(3)];
+disp(coeffs')
+
+coeffs = coeffs(end:-1:1);
