@@ -222,20 +222,30 @@ void load_map(vector<double> &map_waypoints_x, vector<double> &map_waypoints_y,
  *  f(x) = a0 + a1 *x + .. + an * x^n
  */
 double polyval(vector<double> &coeffs, double x) {
-	double f = coeffs[0];
-	double x_power = x;
-	for (int deg = 1; deg < coeffs.size(); ++deg) {
-		f += coeffs[deg] * x_power;
-		x_power = x_power * x;
+	double f = 0.0;
+
+	if (coeffs.size() > 0) {
+		f = coeffs[0];
+		double x_power = x;
+		for (int deg = 1; deg < coeffs.size(); ++deg) {
+			f += coeffs[deg] * x_power;
+			x_power = x_power * x;
+		}
 	}
 	return f;
 }
 
 vector<double> polyder(vector<double> &coeffs) {
 	/* Computing 1st derivative evaluation on the polynomial */
-	vector<double>  Df_coeffs(coeffs.size()-1);
-	for(int deg=1; deg<coeffs.size(); ++deg) {
-		Df_coeffs.push_back(deg * coeffs[deg]) ;
+	vector<double>  Df_coeffs;
+	if(coeffs.size()>0){
+		Df_coeffs.reserve(coeffs.size()-1);
+		for(int deg=1; deg<coeffs.size(); ++deg) {
+			Df_coeffs.push_back(deg * coeffs[deg]) ;
+		}
+	} else{
+		Df_coeffs.reserve(1);
+		Df_coeffs.push_back(0.0);
 	}
 	return Df_coeffs;
 }
