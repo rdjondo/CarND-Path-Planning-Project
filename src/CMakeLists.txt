@@ -7,7 +7,7 @@ add_definitions(-std=c++11)
 set(CXX_FLAGS "-O1 -Wall -Wextra -pedantic -Wshadow")
 set(CMAKE_CXX_FLAGS, "${CXX_FLAGS}")
 
-set(sources main.cpp utils.cpp jmt.cpp)
+set(sources main.cpp utils.cpp jmt.cpp optim_jmt.cpp)
 
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 

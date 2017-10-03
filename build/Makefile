@@ -177,6 +177,33 @@ main.cpp.s:
 	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+optim_jmt.o: optim_jmt.cpp.o
+
+.PHONY : optim_jmt.o
+
+# target to build an object file
+optim_jmt.cpp.o:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/optim_jmt.cpp.o
+.PHONY : optim_jmt.cpp.o
+
+optim_jmt.i: optim_jmt.cpp.i
+
+.PHONY : optim_jmt.i
+
+# target to preprocess a source file
+optim_jmt.cpp.i:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/optim_jmt.cpp.i
+.PHONY : optim_jmt.cpp.i
+
+optim_jmt.s: optim_jmt.cpp.s
+
+.PHONY : optim_jmt.s
+
+# target to generate assembly for a file
+optim_jmt.cpp.s:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/optim_jmt.cpp.s
+.PHONY : optim_jmt.cpp.s
+
 utils.o: utils.cpp.o
 
 .PHONY : utils.o
@@ -219,6 +246,9 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... optim_jmt.o"
+	@echo "... optim_jmt.i"
+	@echo "... optim_jmt.s"
 	@echo "... utils.o"
 	@echo "... utils.i"
 	@echo "... utils.s"

@@ -16,7 +16,7 @@ using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-vector<double> JMT(vector< double> &start, vector <double> &end, double T)
+inline vector<double> JMT(vector< double> &start, vector <double> &end, double T)
 {
     /*
     Calculate the Jerk Minimizing Trajectory that connects the initial state
@@ -25,7 +25,7 @@ vector<double> JMT(vector< double> &start, vector <double> &end, double T)
     INPUTS
 
     start - the vehicles start location given as an array of length 4
-        corresponding to initial values of [s, s_dot, s_double_dot, s_triple_dot]
+        corresponding to initial values of [s, s_dot, s_double_dot]
 
     end   - the desired end state for vehicle. Like "start" this is a
         length three array.
@@ -78,8 +78,6 @@ vector<double> JMT(vector< double> &start, vector <double> &end, double T)
 
      */
 
-    vector<double> coeff; // Returned coeffs
-
     double sk = start[0];
     double sk_dot = start[1];
     double sk_double_dot = start[2];
@@ -103,7 +101,7 @@ vector<double> JMT(vector< double> &start, vector <double> &end, double T)
 				6 * T    , 12 * T*T  ,  20 * T*T*T  ;
 
 		ak = Tpk.colPivHouseholderQr().solve(s_lim);
-		coeff = {sk, sk_dot, sk_double_dot/2, ak(0), ak(1), ak(2)};
+		vector<double> coeff = {sk, sk_dot, sk_double_dot/2, ak(0), ak(1), ak(2)};
 
     return coeff;
 

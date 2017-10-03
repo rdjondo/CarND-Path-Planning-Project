@@ -27,7 +27,7 @@ coeffs_s = jmt(sk,sk_dot,sk_double_dot,sT,sT_dot, sT_double_dot,T);
 %coeffs_jerk = polyder(polyder(polyder(coeffs_s)));
 
 sT_inc = (sT-sk)/2; % search increment
-direction = 1*sT_inc;
+direction = 1;
 direction_change = 1;
 
 
