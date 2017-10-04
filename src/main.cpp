@@ -11,7 +11,7 @@
 #include "spline.h"
 #include "utils.h"
 #include "jmt.h"
-#include "optim_jmt.m"
+#include "optim_jmt.h"
 
 using namespace std;
 
@@ -109,8 +109,6 @@ int main() {
 
 							json msgJson;
 
-							vector<double> next_x_vals;
-							vector<double> next_y_vals;
 
 							vector<double> next_s_vals;
 							vector<double> next_d_vals;
@@ -127,40 +125,82 @@ int main() {
 
 							// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
 
+							const double delta_t = 0.02;
+							static vector<double> coeffs_old = {0.0, 0.0 , 0.0 , 0.0 , 0.0 , 0.0};
+							static int N_samples_old = -1;
+
 							double sk = car_s;
-							double sk_dot = car_speed;
+							double sk_dot = car_speed/2.23694;
 							double sk_double_dot = 0.0;
 
-							double sT_dot = 22;
+							double sT_dot = 21;
+							//if(((int)floor(car_s/100))%2==0) sT_dot = 20;
 							double sT_double_dot = 0.0;
-							const double delta_t = 0.02;
 
-							//if(end_path_s.size()>2){
-							cout<<"Size:"<< previous_path_x.size() << endl;
-							//}
+							/* Find delay single last plan */
+							double delay_t=0.24;
+							if(N_samples_old>=0) {
+								double t_incr=0.05;
+								int old_dir = 1;
+								int dir = 1;
+								double s_estim = polyval(coeffs_old, delay_t);
+								while(fabs(s_estim-car_s)>1e-3 && delay_t>0.0 ){
+									if(s_estim>car_s){
+										delay_t -= t_incr;
+										dir = 1;
+									} else{
+										delay_t += t_incr;
+										dir = -1;
+									}
+									s_estim = polyval(coeffs_old, delay_t);
+									if(dir != old_dir){
+										t_incr/=2.0;
+									}
+									old_dir = dir;
+								}
+								if(delay_t<0.0) delay_t = 0.0;
+
+								/* Display estimated telemetry from old plan */
+								cout<<"delta_t:"<< delay_t <<"   N_samples_old:"<<endl;
+								cout<<"car_s:"<<car_s<<"  estim car_s:"<<polyval(coeffs_old, delay_t)<<endl;
+								vector<double> speed_poly = polyder(coeffs_old);
+								sk_dot = polyval( speed_poly, delay_t);
+								cout<<"car_speed:"<<car_speed<<"  estim car_speed:"<<sk_dot*2.23694<<endl;
+								vector<double> acc_poly = polyder(speed_poly);
+								sk_double_dot = polyval( acc_poly, delay_t);
+								cout<<"  estim car_acc:"<<sk_double_dot<<endl;
+							}
+
 
 							double sT_optimised = 0.0;
 							double T_optimised = 0.0;
 
-							vector<double> coeffs = optim_jmt(sk,sk_dot,sk_double_dot,sT_dot,
+							vector<double> coeffs = optim_jmt(sk, sk_dot, sk_double_dot, sT_dot,
 									sT_double_dot, sT_optimised, T_optimised);
 
-							const int N_samples = (int) T_optimised/delta_t;
+							coeffs_old = coeffs;
+
+							const int N_samples = 128; //(int) T_optimised/delta_t;
+							N_samples_old = N_samples;
+
+							static vector<double> next_x_vals(N_samples);
+							static vector<double> next_y_vals(N_samples);
+							next_x_vals.clear();
+							next_y_vals.clear();
 
 							cout<<"coeffs = ["<<coeffs[0]<<", "<<coeffs[1]<<", "<<coeffs[2]<<", "<<coeffs[3]
 							<<", "<<coeffs[4]<<", "<<coeffs[5]<<"] "<<endl;
 
-							double dist_inc = 0.4;
+							// double dist_inc = 0.4;
 							for(int i = 0; i < N_samples; i++)
 							{
 								double next_s = polyval(coeffs, (i+1)*delta_t);
 								double next_d = 6;
 								vector<double> xy_veh = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-								vector<double> xy = mapCoordToVehicleCoordinates(car_x, car_y, car_yaw, xy_veh[0], xy_veh[1]);
-
-								xy = mapPtVehCoordToMapCoordinates(car_x, car_y, car_yaw, xy[0], xy[1]);
-								next_x_vals.push_back(xy[0]);
-								next_y_vals.push_back(xy[1]);
+								//vector<double> xy = mapCoordToVehicleCoordinates(car_x, car_y, car_yaw, xy_veh[0], xy_veh[1]);
+								//xy = mapPtVehCoordToMapCoordinates(car_x, car_y, car_yaw, xy[0], xy[1]);
+								next_x_vals.push_back(xy_veh[0]);
+								next_y_vals.push_back(xy_veh[1]);
 							}
 
 							msgJson["next_x"] = next_x_vals;
@@ -168,10 +208,10 @@ int main() {
 
 							auto msg = "42[\"control\"," + msgJson.dump() + "]";
 
-							//this_thread::sleep_for(chrono::milliseconds(1000));
 							ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 							// std::cout<< "DOWN:" << j<<std::endl;
 							// std::cout<< "UP:" << msg<<std::endl;
+							this_thread::sleep_for(chrono::milliseconds(1000));
 						}
 					}
 					else

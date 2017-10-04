@@ -221,7 +221,7 @@ void load_map(vector<double> &map_waypoints_x, vector<double> &map_waypoints_y,
  *  Computing polynomial evaluation using coefficients [a0, a1, .. an] on x :
  *  f(x) = a0 + a1 *x + .. + an * x^n
  */
-double polyval(vector<double> &coeffs, double x) {
+double polyval(const vector<double> &coeffs, double x) {
 	double f = 0.0;
 
 	if (coeffs.size() > 0) {
@@ -235,7 +235,7 @@ double polyval(vector<double> &coeffs, double x) {
 	return f;
 }
 
-vector<double> polyder(vector<double> &coeffs) {
+vector<double> polyder(const vector<double> &coeffs) {
 	/* Computing 1st derivative evaluation on the polynomial */
 	vector<double>  Df_coeffs;
 	if(coeffs.size()>0){
