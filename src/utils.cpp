@@ -11,6 +11,9 @@
 #include <sstream>
 #include <iostream>
 #include <vector>
+#include <atomic>
+#include <thread>
+#include <chrono>
 #include <string>
 #include "spline.h"
 #include "utils.h"
@@ -215,6 +218,36 @@ void load_map(vector<double> &map_waypoints_x, vector<double> &map_waypoints_y,
 		map_waypoints_dx.push_back(d_x);
 		map_waypoints_dy.push_back(d_y);
 	}
+}
+
+void log_waypoints(std::atomic_bool &ready, int max_loops,
+		const std::vector<double> & next_x_vals,
+		const std::vector<double> & next_y_vals) {
+	std::vector<double> log_x_vals(1000);
+	std::vector<double> log_y_vals(1000);
+
+  for (int i = 0; i < max_loops; ++i) {
+    if(ready){
+      ready = false;
+      for (double x : next_x_vals) {
+        log_x_vals.push_back(x);
+      }
+      for (double y : next_y_vals) {
+        log_y_vals.push_back(y);
+      }
+    } else{
+      this_thread::sleep_for(chrono::milliseconds(15));
+    }
+  }
+
+  ofstream logfile;
+  logfile.open ("example.csv");
+  logfile<<"X, Y";
+  for (int i = 0; i < log_x_vals.size(); ++i) {
+	  logfile << log_x_vals[i] <<  ", " <<  log_x_vals[i] << "\n";
+  }
+  logfile.close();
+
 }
 
 /**

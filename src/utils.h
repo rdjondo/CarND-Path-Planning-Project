@@ -24,6 +24,10 @@ extern std::string hasData(std::string s);
 
 double distance(double x1, double y1, double x2, double y2);
 
+void log_waypoints(std::atomic_bool & ready, int max_loops,
+		const std::vector<double> & next_x_vals,
+		const std::vector<double> & next_y_vals);
+
 int ClosestWaypoint(double x, double y, const std::vector<double> &maps_x,
 		const std::vector<double> &maps_y);
 

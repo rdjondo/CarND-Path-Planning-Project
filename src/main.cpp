@@ -2,6 +2,7 @@
 #include <uWS/uWS.h>
 #include <chrono>
 #include <iostream>
+#include <atomic>
 #include <thread>
 #include <vector>
 #include "utils.h"
@@ -26,8 +27,18 @@ int main() {
 	load_map(map_waypoints_x, map_waypoints_y, map_waypoints_s, map_waypoints_dx,
 			map_waypoints_dy);
 
+	atomic_bool ready = false;
+	int max_loops = 5;
+	std::vector<double> next_x_vals;
+	std::vector<double> next_y_vals;
+
+	std::thread logging_thread(log_waypoints, ready, max_loops,
+			next_x_vals, next_y_vals);
+
 	h.onMessage(
-			[&map_waypoints_x, &map_waypoints_y, &map_waypoints_s, &map_waypoints_dx, &map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+			[&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
+			 &map_waypoints_dx, &map_waypoints_dy,  &next_x_vals,
+			 &next_y_vals](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
 					uWS::OpCode opCode)
 			{
 				// "42" at the start of the message means there's a websocket message event.
@@ -73,8 +84,8 @@ int main() {
 
 
 						  const int N_samples = 100; //(int) T_optimised/delta_t;
-						  static vector<double> next_x_vals(N_samples);
-						  static vector<double> next_y_vals(N_samples);
+						  next_x_vals.clear();
+						  next_y_vals.clear();
 
 
               // TODO: Calculate time to collision against other vehicles in Frenet
@@ -144,4 +155,6 @@ int main() {
 		return -1;
 	}
 	h.run();
+	logging_thread.join();
+
 }

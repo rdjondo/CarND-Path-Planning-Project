@@ -15,7 +15,7 @@ set(MY_BUILD_GOAL Debug)
 
 if(${MY_BUILD_GOAL} MATCHES "Debug") 
   include_directories("./")
-  add_definitions(-std=c++11 -O1 -g -Wall)
+  add_definitions(-std=c++14 -O1 -g -Wall)
   set(sources utils.cpp jmt.cpp optim_jmt.cpp test/test.cpp)
 endif(${MY_BUILD_GOAL} MATCHES "Debug") 
 
