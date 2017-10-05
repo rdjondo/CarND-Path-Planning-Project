@@ -6,7 +6,7 @@
  */
 
 // Load up map values for waypoint's x,y,s and d normalized normal vectors
-#include <math.h>
+#include <cmath>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -249,3 +249,38 @@ vector<double> polyder(const vector<double> &coeffs) {
 	}
 	return Df_coeffs;
 }
+
+
+// Transform waypoints in map coordinates to vehicle coordinates.
+inline vector<double> mapCoordToVehicleCoordinates(double car_x, double car_y,
+    double yaw, double x_way, double y_way) {
+
+  // Fix new coordinate axis origin to vehicle's coordinates
+  double x = x_way - car_x;
+  double y = y_way - car_y;
+
+  // Limit yaw angle
+
+  // Rotate coordinates to vehicle's coordinates
+  double x_veh = x * cos(yaw) - y * sin(yaw);
+  double y_veh = x * sin(yaw) + y * cos(yaw);
+  return
+  { x_veh, y_veh};
+}
+
+// Transform waypoints in vehicle coordinates to map coordinates.
+inline vector<double> mapPtVehCoordToMapCoordinates(double car_x, double car_y,
+    double yaw, double x_way, double y_way) {
+
+  // Rotate coordinates to vehicle's coordinates
+  double x = x_way * cos(-yaw) - y_way * sin(-yaw);
+  double y = x_way * sin(-yaw) + y_way * cos(-yaw);
+
+  // Fix new coordinate axis origin to map's coordinates
+  double x_map = x + car_x;
+  double y_map = y + car_y;
+
+  return
+  { x_map, y_map};
+}
+

@@ -9,6 +9,10 @@
 #define UTILS_H_
 
 // For converting back and forth between radians and degrees.
+#ifndef M_PI
+#define M_PI 3.14159
+#endif
+
 constexpr double pi() {
 	return M_PI;
 }
