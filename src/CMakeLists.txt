@@ -7,11 +7,13 @@ set(EXECUTABLE path_planning)
 ####################################################
 ## TO SWITCH TO THE RELEASE TARGET COMMENT NEXT LINE
 ####################################################
-set(MY_BUILD_GOAL Debug)
+# set(MY_BUILD_GOAL Debug)
 
-
+# Support for Threads both on Linux and Windows
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
+
+set(COMMON_SRC utils.cpp jmt.cpp optim_jmt.cpp points.cpp trajectory.cpp)
 
 ####################################################
 # BUILD FOR DEBUG
@@ -19,17 +21,17 @@ find_package(Threads REQUIRED)
 
 if(${MY_BUILD_GOAL} MATCHES "Debug") 
   include_directories("./")
-  add_definitions(-std=c++14 -O1 -g -Wall)
+  add_definitions(-std=c++14 -O1 -g -Wall -Wextra)
   set(MY_LIBRARIES Threads::Threads)
-  set(sources utils.cpp jmt.cpp optim_jmt.cpp trajectory.cpp test/test.cpp)
+  set(sources ${COMMON_SRC} test/test.cpp)
 
 else(${MY_BUILD_GOAL} MATCHES "Debug")
 ####################################################
 # BUILD FOR RELEASE
 ####################################################
 
-  add_definitions(-std=c++11 -O3)
-  set(sources utils.cpp jmt.cpp optim_jmt.cpp trajectory.cpp main.cpp)
+  add_definitions(-std=c++14 -O0)
+  set(sources ${COMMON_SRC} main.cpp)
   set(MY_LIBRARIES Threads::Threads z ssl uv  uWS)
 
 endif(${MY_BUILD_GOAL} MATCHES "Debug") 

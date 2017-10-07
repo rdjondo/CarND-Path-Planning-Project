@@ -2,7 +2,7 @@
  * optim_jmt.h
  *
  *  Created on: 3 Oct 2017
- *      Author: puma
+ *      Author: rdjondo
  */
 
 #ifndef OPTIM_JMT_H_

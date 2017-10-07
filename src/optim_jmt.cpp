@@ -2,7 +2,7 @@
  * optim_jmt.cpp
  *
  *  Created on: 3 Oct 2017
- *      Author: puma
+ *      Author: rdjondo
  */
 #include <vector>
 #include <cmath>

@@ -2,64 +2,97 @@
  * utils.h
  *
  *  Created on: 30 Sep 2017
- *      Author: puma
+ *      Author: rdjondo
  */
 
 #ifndef UTILS_H_
 #define UTILS_H_
 
 
-// In the Cygwin environment M_PI is not defined.
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+/**
+ * Vector point double buffer
+ * */
 
-constexpr double pi() {
-	return M_PI;
+template<class T>
+class DoubleBuffer {
+private:
+  std::mutex idxMutex;
+  T buf[2];
+  T empty;
+  int busyIdx; /* Locked buffer reading */
+  int lastWriteIdx; /* Last updated buffer */
+public:
+  DoubleBuffer();
+  void update(const T & a);
+  const T get();
+};
+
+template<class T>
+DoubleBuffer<T>::DoubleBuffer() :
+    busyIdx(-1), lastWriteIdx(-1) {
+  empty.clear();
 }
 
-// For converting back and forth between radians and degrees.
-extern double deg2rad(double x);
-extern double rad2deg(double x);
+template<class T>
+void DoubleBuffer<T>::update(const T & a) {
+  idxMutex.lock();
+  int writeIdx = !lastWriteIdx;
+  if (busyIdx!=-1) {
+    writeIdx = !busyIdx;
+  } else{
+    busyIdx = writeIdx;
+  }
+  idxMutex.unlock();
+
+  /* Write buffer */
+  buf[writeIdx] = a;
+
+  idxMutex.lock();
+  if (busyIdx==writeIdx) {
+    busyIdx=-1;
+  }
+  lastWriteIdx = writeIdx; /* New data */
+  idxMutex.unlock();
+
+}
+
+template<class T>
+const T DoubleBuffer<T>::get() {
+  idxMutex.lock();
+  int readIdx = lastWriteIdx;
+  if (busyIdx!=-1) {
+    readIdx = !busyIdx;
+  }else{
+    busyIdx = readIdx;
+  }
+  idxMutex.unlock();
+
+  /** If no write since last read return empty vector */
+  if(lastWriteIdx==-1){
+    return empty;
+  }
+
+  /* Write a copy buffer out */
+  T buf_out(buf[readIdx]);
+
+  idxMutex.lock();
+  if (busyIdx==readIdx) {
+    busyIdx=-1;
+  }
+  lastWriteIdx = -1;
+  idxMutex.unlock();
+
+  return buf_out;
+}
+
+
+extern void logWaypoints(int max_loops, const VectorPoints & next_vals, DoubleBuffer<VectorPoints> & log);
 
 extern std::string hasData(std::string s);
 
-class Point{
-public:
-	double x;
-	double y;
-};
 
-
-class VectorPoints{
-public:
-	std::vector<Point> pts;
-	void setPoints(const std::vector<double> & x, const std::vector<double> & y);
-	void setPoints(const nlohmann::json & x, const nlohmann::json & y);
-	virtual ~VectorPoints();
-public:
-	std::vector<double> getVectorX() const;
-	std::vector<double> getVectorY() const;
-	void push_back(Point pt);
-	void clear();
-	size_t size();
-	const Point & at(size_t i);
-};
-
-void logWaypoints(std::atomic_bool & ready, int max_loops,
-		const VectorPoints & next_vals);
-
-// Transform from Frenet s,d coordinates to Cartesian x,y
-Point getXY(double s, double d, const std::vector<double> &maps_s,
-		const VectorPoints &maps);
-
-void loadMap(VectorPoints &map_waypoints,
-		std::vector<double> &map_waypoints_s,
-		std::vector<double> &map_waypoints_dx,
-		std::vector<double> &map_waypoints_dy);
-
-double polyval(const std::vector<double> &coeffs, double x) ;
-
-std::vector<double> polyder(const std::vector<double> &coeffs);
+extern void loadMap(VectorPoints &map_waypoints, std::vector<double> &map_waypoints_s,
+    std::vector<double> &map_waypoints_dx,
+    std::vector<double> &map_waypoints_dy);
 
 #endif /* UTILS_H_ */
