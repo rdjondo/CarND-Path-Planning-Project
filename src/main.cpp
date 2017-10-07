@@ -5,6 +5,8 @@
 #include <atomic>
 #include <thread>
 #include <vector>
+#include <functional> // For ref wrapper
+#include "json.hpp"
 #include "utils.h"
 #include "trajectory.h"
 
@@ -17,28 +19,27 @@ int main() {
 	uWS::Hub h;
 
 	// Load up map values for waypoint's x,y,s and d normalized normal vectors
-	vector<double> map_waypoints_x;
-	vector<double> map_waypoints_y;
+	VectorPoints map_waypoints;
 	vector<double> map_waypoints_s;
 	vector<double> map_waypoints_dx;
 	vector<double> map_waypoints_dy;
 
 	// Waypoint map to read from
-	load_map(map_waypoints_x, map_waypoints_y, map_waypoints_s, map_waypoints_dx,
-			map_waypoints_dy);
+	loadMap(map_waypoints, map_waypoints_s, map_waypoints_dx,	map_waypoints_dy);
 
-	atomic_bool ready = false;
+
+	atomic_bool ready(false);
 	int max_loops = 5;
-	std::vector<double> next_x_vals;
-	std::vector<double> next_y_vals;
+	VectorPoints next_vals;
 
-	std::thread logging_thread(log_waypoints, ready, max_loops,
-			next_x_vals, next_y_vals);
+	next_vals.clear();
+
+	std::thread logging_thread(logWaypoints, std::ref(ready), max_loops,
+			std::cref(next_vals));
 
 	h.onMessage(
-			[&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
-			 &map_waypoints_dx, &map_waypoints_dy,  &next_x_vals,
-			 &next_y_vals](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+			[&map_waypoints, &map_waypoints_s,&map_waypoints_dx, &map_waypoints_dy,
+			 &next_vals](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
 					uWS::OpCode opCode)
 			{
 				// "42" at the start of the message means there's a websocket message event.
@@ -70,8 +71,8 @@ int main() {
 							double car_speed = j[1]["speed"];
 
 							// Previous path data given to the Planner
-							json previous_path_x = j[1]["previous_path_x"];
-							json previous_path_y = j[1]["previous_path_y"];
+							json previous_path_x_json = j[1]["previous_path_x"];
+							json previous_path_y_json = j[1]["previous_path_y"];
 							// Previous path's end s and d values
 							double end_path_s = j[1]["end_path_s"];
 							double end_path_d = j[1]["end_path_d"];
@@ -84,8 +85,7 @@ int main() {
 
 
 						  const int N_samples = 100; //(int) T_optimised/delta_t;
-						  next_x_vals.clear();
-						  next_y_vals.clear();
+						  next_vals.clear();
 
 
               // TODO: Calculate time to collision against other vehicles in Frenet
@@ -93,12 +93,15 @@ int main() {
               // TODO: Design cost function
 
               // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
+						  VectorPoints previous_path;
+						  previous_path.setPoints(previous_path_x_json, previous_path_y_json);
 
 
-						  trajectory(previous_path_x, previous_path_y, N_samples, car_s, car_speed, next_x_vals, next_y_vals);
+						trajectory(map_waypoints_s, map_waypoints, previous_path, N_samples, car_s,
+								car_speed, next_vals);
 
-							msgJson["next_x"] = next_x_vals;
-							msgJson["next_y"] = next_y_vals;
+							msgJson["next_x"] = next_vals.getVectorX();
+							msgJson["next_y"] = next_vals.getVectorY();
 
 							auto msg = "42[\"control\"," + msgJson.dump() + "]";
 

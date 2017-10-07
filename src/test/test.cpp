@@ -16,6 +16,7 @@
 #include <atomic>
 #include <functional> // For ref wrapper
 
+#include "json.hpp"
 #include "utils.h"
 #include "trajectory.h"
 
@@ -38,11 +39,10 @@ void consume_waypoints(std::vector<double> & next_x_vals,
 }
 
 int main(){
-	atomic<bool> ready(false);
+	atomic_bool ready(false);
 	int max_loops = 5;
-	std::vector<double> next_x_vals(128);
-	std::vector<double> next_y_vals(128);
-	std::thread logging_thread(log_waypoints, std::ref(ready), max_loops,
-			std::cref(next_x_vals), std::cref(next_y_vals));
-  return 0;
+	VectorPoints next_vals;
+	std::thread logging_thread(logWaypoints, std::ref(ready), max_loops,
+			std::cref(next_vals));
+	return 0;
 }

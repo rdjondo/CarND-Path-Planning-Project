@@ -61,19 +61,6 @@ vector<double> JMT(vector< double> &start, vector <double> &end, double T)
     s'(T)  - ( 0  + sk_dot     + sk_double_dot   * T    ) == a3 * 3 * T**2 + a4 * 4 * T**3  +  a5 * 5 * T**​4
     s''(T) - ( 0  + 0          + sk_double_dot          ) == a3 * 6 * T    + a4 * 12 * T**2 +  a5 * 20 * T**​3
 
-
-    The equations for position, velocity, and acceleration are given by if s(T) is unknown and jerk is known:
-
-    s(t)    = sk + sk_dot * t + sk_double_dot/2 * t**2 + sk_triple_dot/6 * t**3  +  a4 * t**4       +  a5 * t**​5
-    s'(t)   = 0  + sk_dot     + sk_double_dot * t      + sk_triple_dot/2 * t**2  +  a4 * 4 * t**3   +  a5 * 5 * t**​4
-    s''(t)  = 0  + 0          + sk_double_dot          + sk_triple_dot   * t     +  a4 * 12 * t**2  +  a5 * 20 * t**​3
-    s'''(t) = 0  + 0          + 0                      + sk_triple_dot           +  a4 * 24 * t     +  a5 * 60 * t**​2
-
-    so when re-arranging the terms, for t == T, the end of the motion and assuming that s(T) is not known:
-            - (sk + sk_dot * T + sk_double_dot/2 * T**2 + sk_triple_dot/6 * T**3  ) ==  -s(T) +  a4 * T**4       +  a5 * T**​5
-    s'(T)   - (0  +  sk_dot    + sk_double_dot   * T    + sk_triple_dot/2 * T**2  ) ==  0     +  a4 * 4 * T**3   +  a5 * 5 * T**​4
-    s'''(T) - (0  +  0         + 0                      + sk_triple_dot           ) ==  0     +  a4 * 24 * T     +  a5 * 60 * T**​2
-
     s_lim = Tpk * ak
 
      */
@@ -81,12 +68,10 @@ vector<double> JMT(vector< double> &start, vector <double> &end, double T)
     double sk = start[0];
     double sk_dot = start[1];
     double sk_double_dot = start[2];
-    double sk_triple_dot = start[3];
 
     double sT = end[0];
     double sT_dot = end[1];
     double sT_double_dot = end[2];
-    double sT_triple_dot = end[3];
 
     VectorXd s_lim(3) ;
     MatrixXd Tpk(3,3);

@@ -4,10 +4,14 @@ cmake_minimum_required (VERSION 3.5)
 
 set(EXECUTABLE path_planning)
 
+####################################################
+## TO SWITCH TO THE RELEASE TARGET COMMENT NEXT LINE
+####################################################
 set(MY_BUILD_GOAL Debug)
-# set(MY_BUILD_GOAL Release)
 
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 
 ####################################################
 # BUILD FOR DEBUG
@@ -16,18 +20,19 @@ set(MY_BUILD_GOAL Debug)
 if(${MY_BUILD_GOAL} MATCHES "Debug") 
   include_directories("./")
   add_definitions(-std=c++14 -O1 -g -Wall)
-  set(sources utils.cpp jmt.cpp optim_jmt.cpp test/test.cpp)
-endif(${MY_BUILD_GOAL} MATCHES "Debug") 
+  set(MY_LIBRARIES Threads::Threads)
+  set(sources utils.cpp jmt.cpp optim_jmt.cpp trajectory.cpp test/test.cpp)
 
+else(${MY_BUILD_GOAL} MATCHES "Debug")
 ####################################################
 # BUILD FOR RELEASE
 ####################################################
-if(${MY_BUILD_GOAL} MATCHES "Release")
 
   add_definitions(-std=c++11 -O3)
-  set(sources utils.cpp jmt.cpp optim_jmt.cpp test/test.cpp)
+  set(sources utils.cpp jmt.cpp optim_jmt.cpp trajectory.cpp main.cpp)
+  set(MY_LIBRARIES Threads::Threads z ssl uv  uWS)
 
-endif(${MY_BUILD_GOAL} MATCHES "Release") 
+endif(${MY_BUILD_GOAL} MATCHES "Debug") 
 
 ####################################################
 # DEFINE EXECUTABLE
@@ -52,8 +57,5 @@ endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 ####################################################
 # ADD LIBRARY FOR RELEASE TARGET
 ####################################################
-if(${MY_BUILD_GOAL} MATCHES "Release")
 
-  target_link_libraries(${EXECUTABLE} z ssl uv  uWS)
-
-endif(${MY_BUILD_GOAL} MATCHES "Release")
+target_link_libraries(${EXECUTABLE} ${MY_LIBRARIES})

@@ -49,8 +49,6 @@ std::vector<double> optim_jmt(double sk, double sk_dot,
 
 	const double T = min(40.0, max(2.0, fabs(sT_dot-sk_dot)/virtual_acceleration));
 
-	const double delta_t = 0.02;
-
 	int num_iter = 1;
 
 	/* Call JMT function to find polynomial that satisfies the

@@ -15,6 +15,7 @@
 #include <thread>
 #include <chrono>
 #include <string>
+#include "json.hpp"
 #include "spline.h"
 #include "utils.h"
 
@@ -26,6 +27,78 @@ double deg2rad(double x) {
 double rad2deg(double x) {
 	return x * 180 / pi();
 }
+
+
+//////////////////////////////
+/** Defining return function to print internals of string class */
+
+
+void VectorPoints::setPoints(const std::vector<double> & x, const std::vector<double> & y){
+	for(size_t i=0; i<x.size() && i<y.size(); ++i){
+		Point p = {x[i], y[i]};
+		this->pts.push_back(p);
+	}
+}
+
+void VectorPoints::setPoints(const nlohmann::json & x, const nlohmann::json & y){
+	for(size_t i=0; i<x.size() && i<y.size(); ++i){
+		Point p = {(double )x[i], (double) y[i]};
+		this->pts.push_back(p);
+	}
+}
+
+
+std::vector<double> VectorPoints::getVectorX() const {
+	std::vector<double> xVec;
+	xVec.reserve(this->pts.size());
+	for(Point pt : this->pts){
+		xVec.push_back(pt.x);
+	}
+	return xVec;
+}
+
+std::vector<double> VectorPoints::getVectorY() const{
+	std::vector<double> yVec;
+	yVec.reserve(this->pts.size());
+	for(Point pt : this->pts){
+		yVec.push_back(pt.y);
+	}
+	return yVec;
+}
+
+void VectorPoints::push_back(Point pt) {
+	this->pts.push_back(pt);
+}
+
+void VectorPoints::clear() {
+	this->pts.clear();
+}
+
+size_t VectorPoints::size() {
+	return this->pts.size();
+}
+
+const Point & VectorPoints::at(size_t i){
+	return this->pts.at(i);
+}
+
+VectorPoints::~VectorPoints(){}
+
+std::ostream& operator<<(std::ostream &strm, const Point &a) {
+  return strm << "(" << a.x << "," << a.y << ")";
+}
+
+std::ostream& operator<<(std::ostream &strm, const VectorPoints &a) {
+	strm << "[";
+	for(size_t i=0; i<a.pts.size(); ++i){
+		if(i==0) strm << a.pts[i] << ", " ;
+		else strm << a.pts[i];
+	}
+  return strm << "]";
+}
+
+//////////////////////////////
+
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
@@ -46,13 +119,13 @@ double distance(double x1, double y1, double x2, double y2) {
 	return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
 
-int ClosestWaypoint(double x, double y, const vector<double> &maps_x,
+int closestWaypoint(double x, double y, const vector<double> &maps_x,
 		const vector<double> &maps_y) {
 
 	double closestLen = 100000; //large number
 	int closestWaypoint = 0;
 
-	for (int i = 0; i < maps_x.size(); i++) {
+	for (size_t i = 0; i < maps_x.size(); i++) {
 		double map_x = maps_x[i];
 		double map_y = maps_y[i];
 		double dist = distance(x, y, map_x, map_y);
@@ -65,29 +138,29 @@ int ClosestWaypoint(double x, double y, const vector<double> &maps_x,
 	return closestWaypoint;
 }
 
-inline int NextWaypoint(double x, double y, double theta,
+inline int nextWaypoint(double x, double y, double theta,
 		const vector<double> &maps_x, const vector<double> &maps_y) {
 
-	int closestWaypoint = ClosestWaypoint(x, y, maps_x, maps_y);
+	int closestWpt = closestWaypoint(x, y, maps_x, maps_y);
 
-	double map_x = maps_x[closestWaypoint];
-	double map_y = maps_y[closestWaypoint];
+	double map_x = maps_x[closestWpt];
+	double map_y = maps_y[closestWpt];
 
 	double heading = atan2((map_y - y), (map_x - x));
 
 	double angle = fabs(theta - heading);
 
 	if (angle > pi() / 4) {
-		closestWaypoint++;
+		closestWpt++;
 	}
 
-	return closestWaypoint;
+	return closestWpt;
 }
 
 // Transform from Cartesian x,y coordinates to Frenet s,d coordinates
 vector<double> getFrenet(double x, double y, double theta,
 		const vector<double> &maps_x, const vector<double> &maps_y) {
-	int next_wp = NextWaypoint(x, y, theta, maps_x, maps_y);
+	int next_wp = nextWaypoint(x, y, theta, maps_x, maps_y);
 
 	int prev_wp;
 	prev_wp = next_wp - 1;
@@ -130,18 +203,18 @@ vector<double> getFrenet(double x, double y, double theta,
 }
 
 // Transform from Frenet s,d coordinates to Cartesian x,y
-vector<double> getXY(double s, double d, const vector<double> &maps_s,
-		const vector<double> &maps_x, const vector<double> &maps_y) {
+Point getXY(double s, double d, const vector<double> &maps_s,
+		const VectorPoints & mapVec) {
 
 	// Defines interpolation functions for smoothing
 	// s -> x and s -> y
-	// The objects are defined as static so that
-	// the parameters are only added once
 	static tk::spline spline_road_x;
 	static tk::spline spline_road_y;
 	static bool splines_initialized = false;
 
 	static vector<double> spline_s(maps_s);
+	static vector<double> maps_x = mapVec.getVectorX();
+	static vector<double> maps_y = mapVec.getVectorY();
 	static vector<double> spline_x(maps_x);
 	static vector<double> spline_y(maps_y);
 
@@ -190,7 +263,7 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
 	return {x + normal[0], y+normal[1]};
 }
 
-void load_map(vector<double> &map_waypoints_x, vector<double> &map_waypoints_y,
+void loadMap(VectorPoints &map_waypoints,
 		vector<double> &map_waypoints_s, vector<double> &map_waypoints_dx,
 		vector<double> &map_waypoints_dy) {
 
@@ -212,28 +285,22 @@ void load_map(vector<double> &map_waypoints_x, vector<double> &map_waypoints_y,
 		iss >> s;
 		iss >> d_x;
 		iss >> d_y;
-		map_waypoints_x.push_back(x);
-		map_waypoints_y.push_back(y);
+		Point pt = {x, y};
+		map_waypoints.push_back(pt);
 		map_waypoints_s.push_back(s);
 		map_waypoints_dx.push_back(d_x);
 		map_waypoints_dy.push_back(d_y);
 	}
 }
 
-void log_waypoints(std::atomic_bool &ready, int max_loops,
-		const std::vector<double> & next_x_vals,
-		const std::vector<double> & next_y_vals) {
-	std::vector<double> log_x_vals(1000);
-	std::vector<double> log_y_vals(1000);
+void logWaypoints(std::atomic_bool &ready, int max_loops, const VectorPoints & next_vals) {
+	VectorPoints log;
 
-  for (int i = 0; i < max_loops; ++i) {
-    if(ready){
-      ready = false;
-      for (double x : next_x_vals) {
-        log_x_vals.push_back(x);
-      }
-      for (double y : next_y_vals) {
-        log_y_vals.push_back(y);
+	for (int i = 0; i < max_loops; ++i) {
+		if (ready) {
+			ready = false;
+			for (Point p : log.pts) {
+				log.pts.push_back(p);
       }
     } else{
       this_thread::sleep_for(chrono::milliseconds(15));
@@ -243,8 +310,8 @@ void log_waypoints(std::atomic_bool &ready, int max_loops,
   ofstream logfile;
   logfile.open ("example.csv");
   logfile<<"X, Y";
-  for (int i = 0; i < log_x_vals.size(); ++i) {
-	  logfile << log_x_vals[i] <<  ", " <<  log_x_vals[i] << "\n";
+  for (size_t i = 0; i < log.pts.size(); ++i) {
+	  logfile << log << "\n";
   }
   logfile.close();
 
@@ -260,7 +327,7 @@ double polyval(const vector<double> &coeffs, double x) {
 	if (coeffs.size() > 0) {
 		f = coeffs[0];
 		double x_power = x;
-		for (int deg = 1; deg < coeffs.size(); ++deg) {
+		for (size_t deg = 1; deg < coeffs.size(); ++deg) {
 			f += coeffs[deg] * x_power;
 			x_power = x_power * x;
 		}
@@ -273,11 +340,10 @@ vector<double> polyder(const vector<double> &coeffs) {
 	vector<double>  Df_coeffs;
 	if(coeffs.size()>0){
 		Df_coeffs.reserve(coeffs.size()-1);
-		for(int deg=1; deg<coeffs.size(); ++deg) {
+		for(size_t deg=1; deg<coeffs.size(); ++deg) {
 			Df_coeffs.push_back(deg * coeffs[deg]) ;
 		}
 	} else{
-		Df_coeffs.reserve(1);
 		Df_coeffs.push_back(0.0);
 	}
 	return Df_coeffs;

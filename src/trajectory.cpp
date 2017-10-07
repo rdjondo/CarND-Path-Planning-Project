@@ -8,21 +8,25 @@
 
 
 #include <cmath>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <thread>
 #include <vector>
+#include <atomic>
 
 #include "spline.h"
+#include "json.hpp"
 #include "utils.h"
 #include "jmt.h"
 #include "optim_jmt.h"
 
 using namespace std;
 
-
-void trajectory(vector<double> &previous_path_x, vector<double> &previous_path_y, const int N_samples, double car_s, double car_speed,
-                vector<double> &next_x_vals, vector<double> &next_y_vals){
-  // DONE: smoothen road path between the waypoints using Spline
+void trajectory(std::vector<double> &map_waypoints_s, VectorPoints &map_waypoints,
+		VectorPoints &previous_path, const int N_samples, double car_s,
+		double car_speed, VectorPoints &next_vals) {
+	// DONE: smoothen road path between the waypoints using Spline
 
   // TODO: Calculate and control SDC vehicle speed and lane position
   // Use a Jerk minimizing function to control the vehicle speed (use the two past points for continuity)
@@ -33,7 +37,7 @@ void trajectory(vector<double> &previous_path_x, vector<double> &previous_path_y
   static int N_samples_old = -1;
 
   static double last_s = 1e20; /* initialise to an arbitrary large number*/
-  const int previous_path_size = previous_path_x.size();
+  const int previous_path_size = previous_path.size();
   double sk = car_s;
   double sk_dot = car_speed/2.23694;
   double sk_double_dot = 0.0;
@@ -68,7 +72,6 @@ void trajectory(vector<double> &previous_path_x, vector<double> &previous_path_y
     /* Display estimated telemetry from old plan */
     double last_t = (N_samples-1)*delta_t;
     car_s = last_s;
-    double sk = last_s;
     cout<<"last_s:"<<last_s<<"   last_t:"<<last_s<<endl;
     cout<<"len(previous_path_x):"<<previous_path_size<<endl;
     cout<<"car_s:"<<car_s<<"  estim car_s:"<<polyval(coeffs_old, last_t)<<endl;
@@ -78,9 +81,6 @@ void trajectory(vector<double> &previous_path_x, vector<double> &previous_path_y
     vector<double> acc_poly = polyder(speed_poly);
     sk_double_dot = polyval( acc_poly, last_t);
     cout<<"estim car_acc:"<<sk_double_dot<<endl;
-    /* Let's compute the kinematic parameters on the last point */
-    cout<<"Previous x path"<<previous_path_x<<" size "<<previous_path_size<<endl;
-    //cout<<"Previous y path"<<previous_path_y<<" size "<<previous_path_size<<endl;
   }
 
 
@@ -97,32 +97,25 @@ void trajectory(vector<double> &previous_path_x, vector<double> &previous_path_y
   cout<<"coeffs = ["<<coeffs[0]<<", "<<coeffs[1]<<", "<<coeffs[2]<<", "<<coeffs[3]
   <<", "<<coeffs[4]<<", "<<coeffs[5]<<"] "<<endl;
 
-  next_x_vals.clear();
-  next_y_vals.clear();
+  next_vals.clear();
   int start_copy = (int)(delay_t/delta_t)+1;
   for(int i = start_copy; i< previous_path_size - 1 && N_samples_old>=0; ++i) {
-    double x = previous_path_x[i];
-    double y = previous_path_y[i];
-    next_x_vals.push_back(x);
-    next_y_vals.push_back(y);
+    next_vals.push_back(previous_path.at(i));
   }
-  double old_x = next_x_vals.back();
-  double old_y = next_y_vals.back();
 
   // double dist_inc = 0.4;
-  double next_s;
+  double next_s = 10;  // Initialising next_s to an arbitrary value
   int t_idx = 0;
-  for(int i = previous_path_size+1; i < N_samples; ++i, t_idx++;)
+  for(int i = previous_path_size+1; i < N_samples; ++i, t_idx++)
   {
     next_s = polyval(coeffs, (t_idx)*delta_t);
 
 
     double next_d = 6;
-    vector<double> xy_veh = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+    Point pveh = getXY(next_s, next_d, map_waypoints_s, map_waypoints);
     //vector<double> xy = mapCoordToVehicleCoordinates(car_x, car_y, car_yaw, xy_veh[0], xy_veh[1]);
     //xy = mapPtVehCoordToMapCoordinates(car_x, car_y, car_yaw, xy[0], xy[1]);
-    next_x_vals.push_back(xy_veh[0]);
-    next_y_vals.push_back(xy_veh[1]);
+    next_vals.push_back(pveh);
   }
   last_s = next_s;
 

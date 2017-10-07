@@ -8,38 +8,52 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-// For converting back and forth between radians and degrees.
+
+// In the Cygwin environment M_PI is not defined.
 #ifndef M_PI
-#define M_PI 3.14159
+#define M_PI 3.14159265358979323846
 #endif
 
 constexpr double pi() {
 	return M_PI;
 }
 
+// For converting back and forth between radians and degrees.
 extern double deg2rad(double x);
 extern double rad2deg(double x);
 
 extern std::string hasData(std::string s);
 
-double distance(double x1, double y1, double x2, double y2);
+class Point{
+public:
+	double x;
+	double y;
+};
 
-void log_waypoints(std::atomic_bool & ready, int max_loops,
-		const std::vector<double> & next_x_vals,
-		const std::vector<double> & next_y_vals);
 
-int ClosestWaypoint(double x, double y, const std::vector<double> &maps_x,
-		const std::vector<double> &maps_y);
+class VectorPoints{
+public:
+	std::vector<Point> pts;
+	void setPoints(const std::vector<double> & x, const std::vector<double> & y);
+	void setPoints(const nlohmann::json & x, const nlohmann::json & y);
+	virtual ~VectorPoints();
+public:
+	std::vector<double> getVectorX() const;
+	std::vector<double> getVectorY() const;
+	void push_back(Point pt);
+	void clear();
+	size_t size();
+	const Point & at(size_t i);
+};
 
-std::vector<double> getFrenet(double x, double y, double theta,
-		const std::vector<double> &maps_x, const std::vector<double> &maps_y);
+void logWaypoints(std::atomic_bool & ready, int max_loops,
+		const VectorPoints & next_vals);
 
 // Transform from Frenet s,d coordinates to Cartesian x,y
-std::vector<double> getXY(double s, double d, const std::vector<double> &maps_s,
-		const std::vector<double> &maps_x, const std::vector<double> &maps_y);
+Point getXY(double s, double d, const std::vector<double> &maps_s,
+		const VectorPoints &maps);
 
-void load_map(std::vector<double> &map_waypoints_x,
-		std::vector<double> &map_waypoints_y,
+void loadMap(VectorPoints &map_waypoints,
 		std::vector<double> &map_waypoints_s,
 		std::vector<double> &map_waypoints_dx,
 		std::vector<double> &map_waypoints_dy);
