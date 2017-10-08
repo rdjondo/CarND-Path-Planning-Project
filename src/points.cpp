@@ -21,6 +21,7 @@
 #include <string>
 #include <mutex>
 #include <atomic>
+#include <iomanip>
 #include "json.hpp"
 #include "points.h"
 #include "spline.h"
@@ -111,7 +112,7 @@ std::ostream& operator<<(std::ostream &strm, const Point &p) {
 
 std::ostream& VectorPoints::printCsv(std::ostream &strm, int senquence) const {
   for (size_t i = 0; i < pts.size(); ++i) {
-    strm << senquence << "," << pts[i].x << "," << pts[i].y << "\n";
+    strm << senquence << "," << setprecision(9) << pts[i].x << "," << pts[i].y << "\n";
   }
   return strm;
 }

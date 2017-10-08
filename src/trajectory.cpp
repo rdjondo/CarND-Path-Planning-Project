@@ -27,8 +27,23 @@ static void ideal_trajectory(std::vector<double> &map_waypoints_s,
     const int N_samples, double car_s, double car_speed,
     VectorPoints &next_vals) {
   double dist_inc = 0.4;
+  static std::vector<double> next_s_vec;
+
+  double init_s = -1e9;
+
+  if(next_s_vec.size()!=0){
+    /* Liniar search for inital s point to send back to simulator (motion smoothing)*/
+    for(int i=0 ;init_s < car_s && i<previous_path.size(); ++i){
+      init_s = next_s_vec[i];
+    }
+    next_s_vec.clear();
+  } else {
+    init_s = car_s;
+  }
+
   for (int i = 0; i < N_samples; i++) {
-    double next_s = car_s + (i + 1) * dist_inc;
+    double next_s = init_s + (i + 1) * dist_inc;
+    next_s_vec.push_back(next_s);
     double next_d = 6;
     Point pt = getXY(next_s, next_d, map_waypoints_s, map_waypoints);
     next_vals.push_back(pt);
