@@ -82,7 +82,7 @@ int main() {
 
               json msgJson;
 
-              const int N_samples = 128;//(int) T_optimised/delta_t;
+              const int N_samples = 100;//(int) T_optimised/delta_t;
               next_vals.clear();
 
               // TODO: Calculate time to collision against other vehicles in Frenet
@@ -105,7 +105,7 @@ int main() {
               ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
               // std::cout<< "DOWN:" << j<<std::endl;
               // std::cout<< "UP:" << msg<<std::endl;
-              this_thread::sleep_for(chrono::milliseconds(1000));
+              this_thread::sleep_for(chrono::milliseconds(250));
             }
           }
           else

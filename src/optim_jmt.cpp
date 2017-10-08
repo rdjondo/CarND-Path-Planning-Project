@@ -62,7 +62,7 @@ std::vector<double> optim_jmt(double sk, double sk_dot,
   int direction = 1;
   int direction_change = 1;
 
-  while(fabs(coeffs[5])>10e-6){
+  while(fabs(coeffs[5])>10e-5){
   	++num_iter;
   	//cout<<"Num iter:"<<num_iter<<"  coeffs_6:"<<coeffs[5]<<endl;
 
@@ -91,7 +91,7 @@ std::vector<double> optim_jmt(double sk, double sk_dot,
 
     coeffs = JMT(start, end, T);
 
-    if (num_iter>=50){
+    if (num_iter>=20){
        break;
     }
 
