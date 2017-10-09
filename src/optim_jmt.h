@@ -10,7 +10,7 @@
 
 std::vector<double> optim_jmt(double sk, double sk_dot,
 		double sk_double_dot, double sT_dot, double sT_double_dot,
-		double & sT_optimised, double & T_optimised);
+		double & sT_optimised, double & T_optimised, bool requestFast);
 
 
 

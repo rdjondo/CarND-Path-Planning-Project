@@ -116,10 +116,12 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
 
   double sT_optimised = 0.0;
   double T_optimised = 0.0;
+  bool fastJmtRequest = true;
 
   vector<double> coeffs = optim_jmt(sk, sk_dot, sk_double_dot, sT_dot,
-      sT_double_dot, sT_optimised, T_optimised);
+      sT_double_dot, sT_optimised, T_optimised, fastJmtRequest);
 
+  coeffs_old.clear();
   coeffs_old = coeffs;
 
   cout << "coeffs = [" << coeffs[0] << ", " << coeffs[1] << ", " << coeffs[2]
