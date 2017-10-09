@@ -29,7 +29,7 @@ int main() {
   // Waypoint map to read from
   loadMap(map_waypoints, map_waypoints_s, map_waypoints_dx, map_waypoints_dy);
 
-  int max_loops = 20;
+  int max_loops = 2000;
   VectorPoints next_vals;
 
   next_vals.clear();
@@ -93,7 +93,7 @@ int main() {
               VectorPoints previous_path;
               previous_path.setPoints(previous_path_x_json, previous_path_y_json);
 
-              trajectory(map_waypoints_s, map_waypoints, previous_path, N_samples, car_s,
+              trajectory(map_waypoints_s, map_waypoints, previous_path, N_samples, car_s, car_d,
                   car_speed, next_vals);
 
               msgJson["next_x"] = next_vals.getVectorX();

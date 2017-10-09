@@ -9,7 +9,7 @@
 #define TRAJECTORY_H_
 
 void trajectory(std::vector<double> &map_waypoints_s, VectorPoints &map_waypoints,
-    VectorPoints &previous_path, const int N_samples, double car_s,
+    VectorPoints &previous_path, const int N_samples, double car_s, double car_d,
 		double car_speed, VectorPoints & next_vals);
 
 
