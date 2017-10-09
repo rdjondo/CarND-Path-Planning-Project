@@ -1,7 +1,6 @@
 
 function plot_jmt(coeffs, delta_t, T)
 
-figure(1)
 subplot(221)
 t = 0:delta_t:T;
 X= polyval(coeffs, t);
