@@ -20,17 +20,26 @@ using namespace std;
  * The speed tends to not overshoot in this configuration.
  * This is found in my quick experiments but
  * would need to be proven formally :-)
- * The routine uses a concept of virtual acceleration that
- * must have been used somewhere else
+ * The routine uses a concept of virtual acceleration.
+ *
+ * sk is the initial lateral position
+ * sk_dot is the initial speed
+ * sk_dot is the initial acceleration
+ * sT is the final lateral position
+ * sT_dot is the final speed
+ * sT_double_dot is the final acceleration
+ * virtual_acceleration is the equivalent acceleration of the planned motion
  */
-std::vector<double> optim_jmt(double sk, double sk_dot, double sk_double_dot,
-    double sT_dot, double sT_double_dot, double & sT_optimised,
-    double & T_optimised, bool requestFast) {
+std::vector<double> optim_jmt_affine(double sk, double sk_dot,
+    double sk_double_dot, double sT_dot, double sT_double_dot,
+    double virtual_acceleration) {
 
   /* The equivalent virtual acceleration corresponds to
    * the equivalent acceleration that would satisfy the
    * speed constraints */
-  const double virtual_acceleration = 1.0; /* m/s^2 */
+  if(fabs(virtual_acceleration)<1e-2){
+    virtual_acceleration = 1.0; /* m/s^2 */
+  }
 
   const double T = min(20.0,
       max(2.0, fabs(sT_dot - sk_dot) / virtual_acceleration));
@@ -40,75 +49,32 @@ std::vector<double> optim_jmt(double sk, double sk_dot, double sk_double_dot,
   vector<double> coeffs ;
   coeffs.reserve(6);
 
-  if (requestFast) {
-    start = { sk, sk_dot, sk_double_dot };
-    end = { 0.0, sT_dot, sT_double_dot };
-    coeffs = JMT_fast(start, end, T);
+  start = {sk, sk_dot, sk_double_dot};
+  end = {0.0, sT_dot, sT_double_dot};
+  coeffs = JMT_affine(start, end, T);
 
-  } else {
-    // Make static
-    double sT = sk + 128;
-
-    /* OPTIMISATION ROUTINE (DICHOTOMY)
-     * The position function returned by the JMT function is a polynomial
-     * of degree 5.
-     * So, the jerk is a quadratic function. This routine get the quadratic
-     * coefficient of coeff as close to zero as possible.
-     * Increase sT when on jerk(t), a5 is negative (and -a4/(2*a5) is between 0
-     * and T)
-     * Reduce sT when jerk on jerk(t), a5 is positive and (-a4/(2*a5) is between
-     * 0 and T)
-     * Stop when a5 is very small
-     */
-
-    int num_iter = 1;
-
-    /* Call JMT function to find polynomial that satisfies the
-     * boundary conditions */
-    start = { sk, sk_dot, sk_double_dot };
-    end = { sT, sT_dot, sT_double_dot };
-    coeffs = JMT(start, end, T);
-
-    // This is the search increment
-    double sT_inc = (sT - sk) / 2;
-    int direction = 1;
-    int direction_change = 1;
-
-    while (fabs(coeffs[5]) > 10e-5) {
-      ++num_iter;
-      //cout<<"Num iter:"<<num_iter<<"  coeffs_6:"<<coeffs[5]<<endl;
-
-      // jerk(t) is a quadratic function
-      if (coeffs[5] < 0) {
-        /* Increase sT when on jerk(t), a5 is negative (and -a4/(2*a5) is between 0
-         and T) */
-        direction_change = direction_change * direction;
-        direction = 1;
-      } else {
-        /* Reduce sT when jerk on jerk(t), a5 is positive and (-a4/(2*a5) is between
-         0 and T */
-        direction_change = direction_change * direction;
-        direction = -1;
-      }
-
-      if (direction_change < 0)
-        sT_inc = sT_inc / 2;
-
-      /* Change terminal position */
-      sT = sT + sT_inc * direction;
-
-      start = {sk, sk_dot, sk_double_dot};
-      end = {sT, sT_dot, sT_double_dot};
-
-      coeffs = JMT(start, end, T);
-
-      if (num_iter >= 20) {
-        break;
-      }
-
-    } /* end while */
-    //cout<<"Num iter:"<<num_iter<<"  coeffs_6:"<<coeffs[5]<<endl;
-  }
   return coeffs;
+}
+
+/** optim_jmt_quadratic : is the quadratic Jerk version of optim_jmt_affine
+ * The function solves for a minimum quadratic Jerk polynomial.
+ *
+ * dk is the initial lateral position
+ * dk_dot is the initial speed
+ * dk_dot is the initial acceleration
+ * dT is the final lateral position
+ * dT_dot is the final speed
+ * dT_double_dot is the final acceleration
+ * T is the final time of the planned motion
+ */
+std::vector<double> optim_jmt_quadratic(double dk, double dk_dot, double dk_double_dot,
+    double dT, double dT_dot, double dT_double_dot, double T){
+
+  vector<double> start = { dk, dk_dot, dk_double_dot };
+  vector<double> end = { dT, dT_dot, dT_double_dot };
+
+
+  vector<double> coeff_d = JMT(start, end, T);
+  return coeff_d;
 }
 

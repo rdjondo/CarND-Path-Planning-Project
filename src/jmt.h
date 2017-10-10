@@ -7,7 +7,7 @@
 
 #ifndef JMT_H_
 #define JMT_H_
-std::vector<double> JMT_fast(std::vector<double> &start,
+std::vector<double> JMT_affine(std::vector<double> &start,
     std::vector<double> &end, double T);
 
 std::vector<double> JMT(std::vector<double> &start, std::vector<double> &end,

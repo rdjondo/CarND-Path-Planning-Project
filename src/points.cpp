@@ -97,6 +97,7 @@ VectorPoints::VectorPoints() {
 VectorPoints & VectorPoints::operator= (const VectorPoints &v)
 {
    this->pts = v.pts;
+   return *this;
 }
 
 VectorPoints::VectorPoints(const VectorPoints& v) : pts(v.pts){

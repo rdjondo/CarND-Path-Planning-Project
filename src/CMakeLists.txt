@@ -21,7 +21,7 @@ set(COMMON_SRC utils.cpp jmt.cpp optim_jmt.cpp points.cpp trajectory.cpp)
 
 if(${MY_BUILD_GOAL} MATCHES "Debug") 
   include_directories("./")
-  add_definitions(-std=c++14 -O1 -g -Wall -Wextra)
+  add_definitions(-std=c++14 -O1 -g -Wall -Wextra -pedantic)
   set(MY_LIBRARIES Threads::Threads)
   set(sources ${COMMON_SRC} test/test.cpp)
 
@@ -30,7 +30,7 @@ else(${MY_BUILD_GOAL} MATCHES "Debug")
 # BUILD FOR RELEASE
 ####################################################
 
-  add_definitions(-std=c++14 -O0)
+  add_definitions(-std=c++14 -O2 -Wall)
   set(sources ${COMMON_SRC} main.cpp)
   set(MY_LIBRARIES Threads::Threads z ssl uv  uWS)
 

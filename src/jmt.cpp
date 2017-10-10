@@ -30,9 +30,6 @@ using Eigen::VectorXd;
   T     - The duration, in seconds, over which this manoeuvre should occur.
 
   If isJerkDefined is false, then solves system assuming jerk is unknown.
-  Otherwise, we assume that s(T) is unknown but jerk is known and defined.
-  In this last case
-
 
   OUTPUT
   an array of length 6, each value corresponding to a coefficient in the polynomial
@@ -43,36 +40,6 @@ using Eigen::VectorXd;
   > JMT( [0, 10, 0], [10, 10, 0], 1)
   [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
   */
-
-vector<double> JMT_fast(vector<double> &start, vector<double> &end, double T) {
-  double sk = start[0];
-  double sk_dot = start[1];
-  double sk_double_dot = start[2];
-
-  double sT = end[0];
-  double sT_dot = end[1];
-  double sT_double_dot = end[2];
-
-  VectorXd s_lim(3);
-  MatrixXd Tpk(3, 3);
-  VectorXd ak(3);
-
-  s_lim <<          - ( sk + sk_dot * T + sk_double_dot/2 * T*T ) ,
-        sT_dot      - ( 0  + sk_dot     + sk_double_dot   * T    ),
-      sT_double_dot - ( 0  + 0          + sk_double_dot          ) ;
-
-
-  Tpk << -1, T*T*T    , T*T*T*T  ,
-         0,  3 * T*T  , 4 * T*T*T ,
-         0,  6 * T    , 12 * T*T  ;
-
-
-  ak = Tpk.colPivHouseholderQr().solve(s_lim);
-
-  sT = ak(0);
-  vector<double> coeff = { sk, sk_dot, sk_double_dot / 2, ak(1), ak(2), 0.0 };
-  return coeff;
-}
 
 vector<double> JMT(vector<double> &start, vector<double> &end, double T) {
 
@@ -119,4 +86,47 @@ vector<double> JMT(vector<double> &start, vector<double> &end, double T) {
 
   return coeff;
 
+}
+
+/**
+ * In this version of the JMT calculation, we assume that the Jerk is an
+ * affine function (1 degree polynomial).
+ * This reduces the number of degrees of freedom for this calculation
+ * and allows us to let the algorithm choose the end distance for the
+ * complete trajectory.
+    so when re-arranging the terms, for t == T, the end of the motion, we get
+          - ( sk + sk_dot * T + sk_double_dot/2 * T**2 ) ==  -s(T) +  a3 * T**3     + a4 * T**4      +  0 * T**​5
+   s'(T)  - ( 0  + sk_dot     + sk_double_dot   * T    ) ==           a3 * 3 * T**2 + a4 * 4 * T**3  +  0 * 5 * T**​4
+   s''(T) - ( 0  + 0          + sk_double_dot          ) ==           a3 * 6 * T    + a4 * 12 * T**2 +  0 * 20 * T**​3
+
+   s_lim = Tpk * ak
+ */
+vector<double> JMT_affine(vector<double> &start, vector<double> &end, double T) {
+  double sk = start[0];
+  double sk_dot = start[1];
+  double sk_double_dot = start[2];
+
+  double sT ; /* sT the end distance for the trajectory is actually an unknow parameter*/
+  double sT_dot = end[1];
+  double sT_double_dot = end[2];
+
+  VectorXd s_lim(3);
+  MatrixXd Tpk(3, 3);
+  VectorXd ak(3);
+
+  s_lim <<          - ( sk + sk_dot * T + sk_double_dot/2 * T*T ) ,
+        sT_dot      - ( 0  + sk_dot     + sk_double_dot   * T    ),
+      sT_double_dot - ( 0  + 0          + sk_double_dot          ) ;
+
+
+  Tpk << -1, T*T*T    , T*T*T*T  ,
+         0,  3 * T*T  , 4 * T*T*T ,
+         0,  6 * T    , 12 * T*T  ;
+
+
+  ak = Tpk.colPivHouseholderQr().solve(s_lim);
+
+  sT = ak(0);
+  vector<double> coeff = { sk, sk_dot, sk_double_dot / 2, ak(1), ak(2), 0.0 };
+  return coeff;
 }

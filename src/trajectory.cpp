@@ -32,7 +32,7 @@ static void ideal_trajectory(std::vector<double> &map_waypoints_s,
 
   /* Define next initial position index values */
   double init_s = -1e9;
-  int init_index = 0;
+  size_t init_index = 0;
 
   if(next_s_vec.size()!=0){
     /* Linear search for initial s point to send back to simulator (motion smoothing)*/
@@ -59,9 +59,11 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
     VectorPoints &next_val_xy) {
   // DONE: smoothen road path between the waypoints using Spline
 
-  // TODO: Calculate and control SDC vehicle speed and lane position
+  // DONE: Calculate and control SDC vehicle speed and lane position
   // Use a Jerk minimizing function to control the vehicle speed (use the two past points for continuity)
   // Let's compute the Jerk minimization in the Frenet referential
+
+  // TODO : Fix loop closure discontinuity
 
   const double delta_t = 0.02;
   static vector<double> coeff_s_old = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
@@ -69,7 +71,6 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
   static std::vector<double> next_s_vec;
   static std::vector<double> next_d_vec;
 
-  const int previous_path_size = previous_path.size();
   double sk;
   double sk_dot;
   double sk_double_dot = 0.0;
@@ -88,7 +89,7 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
   /* Define next initial position index values */
   double init_s = -1e9;
   double init_d = -1e9;
-  int init_index;
+  size_t init_index;
 
 
   if (next_s_vec.size() > 1) {
@@ -133,28 +134,16 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
   vector<double> acc_poly_d = polyder(speed_poly_d);
   dk_double_dot = polyval(acc_poly_d, delay_t);
 
-//  cout << "last_s:" << init_s << "   last_t:" << delay_t << "\n";
-//  cout << "len(previous_path_x):" << previous_path_size << "\n";
-//  cout << "car_s:" << car_s << "  estim car_s:" << dk_dot << "\n";
-//  cout << "car_speed:" << car_speed << "  estim car_speed:"
-//      << sk_dot * 2.23694 * 2 << "\n";
-//  cout << "init_index:" << init_index << "  estim sT_dot:" << sT_dot << "\n";
 
+  double virtual_acceleration = 1.0; /* virtual acceleration in m/s^2 */
 
-  double sT_optimised = 0.0;
-  double T_optimised = 0.0;
-  bool fastJmtRequest = true;
-
-  vector<double> coeff_s = optim_jmt(sk, sk_dot, sk_double_dot, sT_dot,
-      sT_double_dot, sT_optimised, T_optimised, fastJmtRequest);
-
-
-  vector<double> start = { dk, dk_dot, dk_double_dot };
-  vector<double> end = { dT, dT_dot, dT_double_dot };
+  vector<double> coeff_s = optim_jmt_affine(sk, sk_dot, sk_double_dot, sT_dot,
+      sT_double_dot, virtual_acceleration);
 
 
   double T = 8.0;
-  vector<double> coeff_d = JMT(start, end, T);
+  vector<double> coeff_d = optim_jmt_quadratic( dk,  dk_dot,  dk_double_dot,
+      dT,  dT_dot,  dT_double_dot, T);
 
   coeff_s_old = coeff_s;
   coeff_d_old = coeff_d;
