@@ -30,7 +30,7 @@ else(${MY_BUILD_GOAL} MATCHES "Debug")
 # BUILD FOR RELEASE
 ####################################################
 
-  add_definitions(-std=c++14 -O2 -Wall)
+  add_definitions(-std=c++14 -O0 -Wall)
   set(sources ${COMMON_SRC} main.cpp)
   set(MY_LIBRARIES Threads::Threads z ssl uv  uWS)
 

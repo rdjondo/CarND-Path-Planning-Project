@@ -75,7 +75,7 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
   double sk_dot;
   double sk_double_dot = 0.0;
 
-  double sT_dot = 10.5;
+  double sT_dot = 20.0;
   double sT_double_dot = 0.0;
 
   double dk;
@@ -87,33 +87,49 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
 
 
   /* Define next initial position index values */
-  double init_s = -1e9;
+  static double init_s = -1e9;
   double init_d = -1e9;
-  size_t init_index;
+  int init_index;
+  int init_index_offset = 0;
+
+  if(init_s < -1e8){
+    //car_s = 3000;
+  }
+  if(previous_path.size()==0){
+    cout<<" PREVIOUS PATH SIZE IS 0 !!"<<endl;
+  }
 
 
   if (next_s_vec.size() > 1) {
+    init_index = 0;
     /* Linear search for initial s point to send back to simulator (motion smoothing)*/
-    for (init_index = 0; init_s < car_s && init_index < previous_path.size();
-        ++init_index) {
+    do {
       init_s = next_s_vec[init_index];
       init_d = next_d_vec[init_index];
-    }
-    next_s_vec.clear();
-    next_d_vec.clear();
+      ++init_index;
+    } while (init_s <= car_s && init_index < previous_path.size());
+
+    init_index_offset = 0;
 
   } else {
     init_index = 0;
     init_s = car_s;
-    init_d = 6;
+    init_d = car_d;
     sk_dot = car_speed / 2.23694; /* Comvert Mi/hr to m/s */
+
+    /* Initial position */
+    coeff_s_old[0] = init_s;
+    coeff_d_old[0] = init_d;
+
+    /* Initial speed */
+    coeff_s_old[1] = sk_dot;
   }
 
   /* New time this is an ugly hyper-parameter optimization.
    * 13 is a "magic" number that compensates for the computation lag */
-  double delay_t = (init_index+13) * delta_t;
+  double delay_t = (init_index + init_index_offset) * delta_t;
 
-  /* Display estimated telemetry from old plan */
+  /* Display estimated telemetry from old plan Frenet S axis  */
   sk = init_s;
   vector<double> speed_poly_s = polyder(coeff_s_old);
   sk_dot = polyval(speed_poly_s, delay_t);
@@ -123,11 +139,11 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
 
   //TODO: Only allow for lane change if speed s_dot greater than minimal speed.
   double dT = 6.0;
-  if(((int)floor(car_s/100))%4==0){
+  if(((int)floor(car_s/300))%2==0){
     dT = 2.0;
   }
 
-  /* Display estimated telemetry from old plan */
+  /* Display estimated telemetry from old plan for Frenet D axis */
   dk = init_d;
   vector<double> speed_poly_d = polyder(coeff_d_old);
   dk_dot = polyval(speed_poly_d, delay_t);
@@ -135,15 +151,18 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
   dk_double_dot = polyval(acc_poly_d, delay_t);
 
 
-  double virtual_acceleration = 1.0; /* virtual acceleration in m/s^2 */
+  double virtual_acceleration = 2.0; /* virtual acceleration in m/s^2 */
 
   vector<double> coeff_s = optim_jmt_affine(sk, sk_dot, sk_double_dot, sT_dot,
       sT_double_dot, virtual_acceleration);
 
-
-  double T = 8.0;
+  double T = 6.0;
   vector<double> coeff_d = optim_jmt_quadratic( dk,  dk_dot,  dk_double_dot,
       dT,  dT_dot,  dT_double_dot, T);
+
+  if(fabs(coeff_s[0])>1e4 || fabs(coeff_d[0])>1e4){
+    cout<<"ALERT LARGE VALUE !!"<<endl;
+  }
 
   coeff_s_old = coeff_s;
   coeff_d_old = coeff_d;
@@ -153,10 +172,10 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
       << endl;
 
   next_val_xy.clear();
+  next_s_vec.clear();
+  next_d_vec.clear();
 
-  //double next_d = 6;
-
-  for (int i = 0; i < N_samples; ++i, i++) {
+  for (int i = 0; i < N_samples; ++i) {
     double next_s = polyval(coeff_s, (i) * delta_t);
     double next_d = polyval(coeff_d, (i) * delta_t);
     next_s_vec.push_back(next_s);

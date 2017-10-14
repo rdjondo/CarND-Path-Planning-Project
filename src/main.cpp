@@ -29,9 +29,8 @@ int main() {
   // Waypoint map to read from
   loadMap(map_waypoints, map_waypoints_s, map_waypoints_dx, map_waypoints_dy);
 
-  int max_loops = 2000;
+  int max_loops = 10000;
   VectorPoints next_vals;
-
   next_vals.clear();
   DoubleBuffer<VectorPoints> log;
 
@@ -78,14 +77,15 @@ int main() {
               double end_path_d = j[1]["end_path_d"];
 
               // Sensor Fusion Data, a list of all other cars on the same side of the road.
-              auto sensor_fusion = j[1]["sensor_fusion"];
+              vector<vector<double>> sensor_fusion = j[1]["sensor_fusion"];
 
               json msgJson;
 
-              const int N_samples = 100;//(int) T_optimised/delta_t;
+              const int N_samples = 70;//(int) T_optimised/delta_t;
+              next_vals.reserve(N_samples);
               next_vals.clear();
 
-              // TODO: Calculate time to collision against other vehicles in Frenet
+              // TODO: Calculate time and distance to collision against other vehicles in Frenet
 
               // TODO: Design cost function
 
@@ -105,7 +105,7 @@ int main() {
               ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
               // std::cout<< "DOWN:" << j<<std::endl;
               // std::cout<< "UP:" << msg<<std::endl;
-              this_thread::sleep_for(chrono::milliseconds(250));
+              this_thread::sleep_for(chrono::milliseconds(400));
             }
           }
           else
