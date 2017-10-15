@@ -81,7 +81,7 @@ int main() {
 
               json msgJson;
 
-              const int N_samples = 70;//(int) T_optimised/delta_t;
+              const int N_samples = 170;//(int) T_optimised/delta_t;
               next_vals.reserve(N_samples);
               next_vals.clear();
 
@@ -94,7 +94,7 @@ int main() {
               previous_path.setPoints(previous_path_x_json, previous_path_y_json);
 
               trajectory(map_waypoints_s, map_waypoints, previous_path, N_samples, car_s, car_d,
-                  car_speed, next_vals);
+                  car_speed,car_yaw, next_vals);
 
               msgJson["next_x"] = next_vals.getVectorX();
               msgJson["next_y"] = next_vals.getVectorY();
@@ -105,7 +105,7 @@ int main() {
               ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
               // std::cout<< "DOWN:" << j<<std::endl;
               // std::cout<< "UP:" << msg<<std::endl;
-              this_thread::sleep_for(chrono::milliseconds(400));
+              this_thread::sleep_for(chrono::milliseconds(500));
             }
           }
           else

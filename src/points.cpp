@@ -61,6 +61,9 @@ void VectorPoints::push_back(Point pt) {
   this->pts.push_back(pt);
 }
 
+void VectorPoints::reserve(size_t size){
+  this->pts.reserve(size);
+}
 void VectorPoints::clear() {
   this->pts.clear();
 }
@@ -226,32 +229,52 @@ Point getXY(double s, double d, const vector<double> &maps_s,
   static tk::spline spline_road_y;
   static bool splines_initialized = false;
 
-  static vector<double> spline_s(maps_s);
-  static vector<double> maps_x = mapVec.getVectorX();
-  static vector<double> maps_y = mapVec.getVectorY();
-  static vector<double> spline_x(maps_x);
-  static vector<double> spline_y(maps_y);
+  static vector<double> spline_s;
+  static vector<double> maps_x ;
+  static vector<double> maps_y ;
+  static vector<double> spline_x;
+  static vector<double> spline_y;
+
+
+  static double max_s;
 
   if (!splines_initialized) {
     // Add additional point at the end of the spline
     // that sort of maps to the second point to smooth
     // out the derivatives
-    spline_s.push_back(maps_x[1] + maps_s.back());
-    spline_x.push_back(maps_x[1]);
-    spline_y.push_back(maps_y[1]);
 
+    spline_s= maps_s;
+    maps_x = mapVec.getVectorX();
+    maps_y = mapVec.getVectorY();
+    spline_x = maps_x;
+    spline_y= maps_y;
+    double last_s;
+    for(size_t i=0; i<4; i++){
+      double dx_wrap = maps_x[i]-maps_x.back();
+      double dy_wrap = maps_y[i]-maps_y.back();
+      if(i==0){
+        last_s = maps_s.back() + sqrt(dx_wrap*dx_wrap+dy_wrap+dy_wrap);
+        max_s = last_s;
+      } else{
+        last_s = maps_s.back() + maps_s[i];
+      }
+      // Tuning arbitrary value
+      double tuning_s_last_val = 0.0;
+      spline_s.push_back(last_s + tuning_s_last_val);
+      spline_x.push_back(maps_x[0]);
+      spline_y.push_back(maps_y[0]);
+    }
     spline_road_x.set_points(maps_s, maps_x);
     spline_road_y.set_points(maps_s, maps_y);
     splines_initialized = true;
   }
 
-  double max_s = maps_s.back();
-
   // Makes sure that the s requested never exceeds the
   // original maximal value of s.
   // Using modulo to perform the loop around s values.
-  s = fmod(s, max_s);
-
+  if(s> max_s){
+    s = fmod(s, max_s);
+  }
   double eps = 1e-3;
 
   double x = spline_road_x(s);

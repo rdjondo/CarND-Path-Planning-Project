@@ -10,7 +10,7 @@
 
 void trajectory(std::vector<double> &map_waypoints_s, VectorPoints &map_waypoints,
     VectorPoints &previous_path, const int N_samples, double car_s, double car_d,
-		double car_speed, VectorPoints & next_vals);
+    double car_speed,double car_yaw, VectorPoints & next_vals);
 
 
 #endif /* TRAJECTORY_H_ */

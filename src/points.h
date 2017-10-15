@@ -41,6 +41,7 @@ public:
   std::vector<double> getVectorY() const;
   std::ostream& printCsv(std::ostream &strm, int senquence) const;
   void push_back(Point pt);
+  void reserve(size_t size);
   void clear();
   size_t size();
   const Point & at(size_t i);
@@ -53,6 +54,10 @@ std::ostream& operator<<(std::ostream &strm, const VectorPoints &a);
 // Transform from Frenet s,d coordinates to Cartesian x,y
 Point getXY(double s, double d, const std::vector<double> &maps_s,
     const VectorPoints &maps);
+
+// Transform from Cartesian x,y coordinates to Frenet s,d coordinates
+std::vector<double> getFrenet(double x, double y, double theta,
+    const std::vector<double> &maps_x, const std::vector<double> &maps_y);
 
 double polyval(const std::vector<double> &coeffs, double x);
 
