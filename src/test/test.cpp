@@ -18,31 +18,49 @@
 #include <functional> // For ref wrapper
 
 #include "json.hpp"
+#include "spline.h"
 #include "points.h"
 #include "utils.h"
 #include "trajectory.h"
 
 using namespace std;
 
-// Idea create a client thead that consumes waypoints
-// and returns to the producer thread (server) a list of
-// past waypoints as well as the current one.
-
-// Need to check whether the list of past waypoints
-// is really what is left to consume
-// 
-void consume_waypoints(VectorPoints next_vals, VectorPoints & next_out) {
-  std::default_random_engine generator;
-  std::uniform_int_distribution<int> distribution(1, 10);
-  int dice_roll = distribution(generator); // generates number in the range 1..6
-
-}
 
 int main() {
-  atomic_bool ready(false);
-  int max_loops = 5;
-  VectorPoints next_vals;
-  std::thread logging_thread(logWaypoints, std::ref(ready), max_loops,
-      std::cref(next_vals));
+  // Load up map values for waypoint's x,y,s and d normalized normal vectors
+  VectorPoints map_waypoints;
+  vector<double> map_waypoints_s;
+  vector<double> map_waypoints_dx;
+  vector<double> map_waypoints_dy;
+
+  // Waypoint map to read from
+  loadMap(map_waypoints, map_waypoints_s, map_waypoints_dx, map_waypoints_dy);
+  RoadGeometry road(map_waypoints, map_waypoints_s);
+
+  DoubleBuffer<VectorPoints> log;
+
+  const int N_samples = 800;
+
+
+  double dist_inc = 10.0;
+  cout<<"road.getMaxS()="<<road.getMaxS()<<endl;
+
+  ofstream logfile;
+  logfile.open("trajectory_calc.csv");
+
+  logfile << "s_req,s,x,y\n";
+
+  for (int i = 0; i < N_samples; i++) {
+    double s_req = i * dist_inc;
+    Point pt = road.getXY(s_req, 6);
+    double s = s_req;
+    if (s > road.getMaxS()) {
+      s = fmod(s_req, road.getMaxS());
+    }
+    logfile << s_req << "," << s << "," << pt.x << "," << pt.y << "\n";
+  }
+  logfile << endl;
+  logfile.close();
+
   return 0;
 }

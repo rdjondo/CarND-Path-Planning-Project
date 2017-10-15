@@ -7,6 +7,7 @@ set(EXECUTABLE path_planning)
 ####################################################
 ## TO SWITCH TO THE RELEASE TARGET COMMENT NEXT LINE
 ####################################################
+
 # set(MY_BUILD_GOAL Debug)
 
 # Support for Threads both on Linux and Windows
@@ -21,7 +22,7 @@ set(COMMON_SRC utils.cpp jmt.cpp optim_jmt.cpp points.cpp trajectory.cpp)
 
 if(${MY_BUILD_GOAL} MATCHES "Debug") 
   include_directories("./")
-  add_definitions(-std=c++14 -O1 -g -Wall -Wextra -pedantic)
+  add_definitions(-std=c++14 -O0 -g3 -Wall -Wextra -pedantic)
   set(MY_LIBRARIES Threads::Threads)
   set(sources ${COMMON_SRC} test/test.cpp)
 

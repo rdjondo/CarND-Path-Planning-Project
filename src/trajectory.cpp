@@ -23,8 +23,7 @@
 
 using namespace std;
 
-static void ideal_trajectory(std::vector<double> &map_waypoints_s,
-    VectorPoints &map_waypoints, VectorPoints &previous_path,
+static void ideal_trajectory(RoadGeometry &road, VectorPoints &previous_path,
     const int N_samples, double car_s, double car_d, double car_speed,
     VectorPoints &next_vals) {
   double dist_inc = 2;
@@ -40,13 +39,13 @@ static void ideal_trajectory(std::vector<double> &map_waypoints_s,
     /* Linear search for initial s point to send back to simulator (motion smoothing)*/
     if(next_s_vec[0]>6914.14925765991+30){
       for(size_t i = 0; i<next_s_vec.size(); ++i){
-        next_s_vec[i] = fmod(next_s_vec[i], 6914.14925765991+30); //TODO : Fix this
+        next_s_vec[i] = fmod(next_s_vec[i],road.getMaxS()); //TODO : Fix this
       }
     }
     /* Bug here because when closing loop init_s is bigger than car_s */
     for(init_index=0 ;init_s < car_s && init_index<previous_path.size(); ++init_index){
       init_s = next_s_vec[init_index];
-      init_s = fmod(init_s, 6914.14925765991); // TODO : this fmod divisor value is incorrect
+      init_s = fmod(init_s, road.getMaxS()); // TODO : this fmod divisor value is incorrect
     }
   } else {
     init_s = car_s;
@@ -59,13 +58,12 @@ static void ideal_trajectory(std::vector<double> &map_waypoints_s,
     double next_s = init_s + (i + 1) * dist_inc;
     next_s_vec.push_back(next_s);
     double next_d = 6;
-    Point pt = getXY(next_s, next_d, map_waypoints_s, map_waypoints);
+    Point pt = road.getXY(next_s, next_d);
     next_vals.push_back(pt);
   }
 }
 
-static void my_trajectory(std::vector<double> &map_waypoints_s,
-    VectorPoints &map_waypoints, VectorPoints &previous_path,
+static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
     const int N_samples, double car_s, double car_d, double car_speed, double car_yaw,
     VectorPoints &next_val_xy) {
   // DONE: smoothen road path between the waypoints using Spline
@@ -86,7 +84,7 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
   double sk_dot;
   double sk_double_dot = 0.0;
 
-  double sT_dot = 20.0*4;
+  double sT_dot = 20.0*5;
   double sT_double_dot = 0.0;
 
   double dk;
@@ -104,7 +102,7 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
   double init_index_offset = 0;
 
   if(init_s < -1e8){
-    car_s = 1000;
+    //car_s = 1000;
   }
   if(previous_path.size()==0){
     cout<<" PREVIOUS PATH SIZE IS 0 !!"<<endl;
@@ -196,7 +194,7 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
     next_s_vec.push_back(next_s);
     next_d_vec.push_back(next_d);
 
-    Point pveh = getXY(next_s, next_d, map_waypoints_s, map_waypoints);
+    Point pveh = road.getXY(next_s, next_d);
     //vector<double> xy = mapCoordToVehicleCoordinates(car_x, car_y, car_yaw, xy_veh[0], xy_veh[1]);
     //xy = mapPtVehCoordToMapCoordinates(car_x, car_y, car_yaw, xy[0], xy[1]);
     //auto sd = getFrenet(pveh.x, pveh.y, car_yaw, map_waypoints.getVectorX(),
@@ -205,13 +203,12 @@ static void my_trajectory(std::vector<double> &map_waypoints_s,
   }
 }
 
-void trajectory(std::vector<double> &map_waypoints_s,
-    VectorPoints &map_waypoints, VectorPoints &previous_path,
+void trajectory(RoadGeometry &road, VectorPoints &previous_path,
     const int N_samples, double car_s, double car_d, double car_speed, double car_yaw,
     VectorPoints &next_val_xy) {
-  /*my_trajectory(map_waypoints_s, map_waypoints, previous_path, N_samples,
-      car_s, car_d, car_speed, car_yaw, next_val_xy);*/
-  ideal_trajectory(map_waypoints_s, map_waypoints, previous_path, N_samples,
+  //my_trajectory(road, previous_path, N_samples,
+  //    car_s, car_d, car_speed, car_yaw, next_val_xy);
+  ideal_trajectory(road, previous_path, N_samples,
       car_s, car_d, car_speed, next_val_xy);
 
 }

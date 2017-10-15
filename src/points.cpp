@@ -23,8 +23,8 @@
 #include <atomic>
 #include <iomanip>
 #include "json.hpp"
-#include "points.h"
 #include "spline.h"
+#include "points.h"
 #include "utils.h"
 
 using namespace std;
@@ -136,8 +136,7 @@ double distance(double x1, double y1, double x2, double y2) {
   return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
 
-int closestWaypoint(double x, double y, const vector<double> &maps_x,
-    const vector<double> &maps_y) {
+int RoadGeometry::closestWaypoint(double x, double y) {
 
   double closestLen = 100000; //large number
   int closestWaypoint = 0;
@@ -155,10 +154,9 @@ int closestWaypoint(double x, double y, const vector<double> &maps_x,
   return closestWaypoint;
 }
 
-inline int nextWaypoint(double x, double y, double theta,
-    const vector<double> &maps_x, const vector<double> &maps_y) {
+int RoadGeometry::nextWaypoint(double x, double y, double theta) {
 
-  int closestWpt = closestWaypoint(x, y, maps_x, maps_y);
+  int closestWpt = this->closestWaypoint(x, y);
 
   double map_x = maps_x[closestWpt];
   double map_y = maps_y[closestWpt];
@@ -175,9 +173,8 @@ inline int nextWaypoint(double x, double y, double theta,
 }
 
 // Transform from Cartesian x,y coordinates to Frenet s,d coordinates
-vector<double> getFrenet(double x, double y, double theta,
-    const vector<double> &maps_x, const vector<double> &maps_y) {
-  int next_wp = nextWaypoint(x, y, theta, maps_x, maps_y);
+vector<double> RoadGeometry::getFrenet(double x, double y, double theta) {
+  int next_wp = this->nextWaypoint(x, y, theta);
 
   int prev_wp;
   prev_wp = next_wp - 1;
@@ -219,55 +216,77 @@ vector<double> getFrenet(double x, double y, double theta,
   return {frenet_s, frenet_d};
 }
 
-// Transform from Frenet s,d coordinates to Cartesian x,y
-Point getXY(double s, double d, const vector<double> &maps_s,
-    const VectorPoints & mapVec) {
+RoadGeometry::RoadGeometry(const VectorPoints map_waypoints, const std::vector<double> &maps_s) {
 
   // Defines interpolation functions for smoothing
   // s -> x and s -> y
-  static tk::spline spline_road_x;
-  static tk::spline spline_road_y;
-  static bool splines_initialized = false;
-
-  static vector<double> spline_s;
-  static vector<double> maps_x ;
-  static vector<double> maps_y ;
-  static vector<double> spline_x;
-  static vector<double> spline_y;
-
-
-  static double max_s;
 
   if (!splines_initialized) {
     // Add additional point at the end of the spline
     // that sort of maps to the second point to smooth
     // out the derivatives
 
-    spline_s= maps_s;
-    maps_x = mapVec.getVectorX();
-    maps_y = mapVec.getVectorY();
+    this->maps_s = maps_s;
+    this->spline_s= maps_s;
+    this->maps_x = map_waypoints.getVectorX();
+    this->maps_y = map_waypoints.getVectorY();
     spline_x = maps_x;
     spline_y= maps_y;
     double last_s;
-    for(size_t i=0; i<4; i++){
-      double dx_wrap = maps_x[i]-maps_x.back();
-      double dy_wrap = maps_y[i]-maps_y.back();
+    for(size_t i=0; i<3; i++){
       if(i==0){
+        double dx_wrap = maps_x[0]-maps_x.back();
+        double dy_wrap = maps_y[0]-maps_y.back();
         last_s = maps_s.back() + sqrt(dx_wrap*dx_wrap+dy_wrap+dy_wrap);
         max_s = last_s;
       } else{
-        last_s = maps_s.back() + maps_s[i];
+        last_s = spline_s.back() + maps_s[i];
       }
-      // Tuning arbitrary value
-      double tuning_s_last_val = 0.0;
-      spline_s.push_back(last_s + tuning_s_last_val);
-      spline_x.push_back(maps_x[0]);
-      spline_y.push_back(maps_y[0]);
+      spline_s.push_back(last_s );
+      spline_x.push_back(maps_x[i]);
+      spline_y.push_back(maps_y[i]);
     }
-    spline_road_x.set_points(maps_s, maps_x);
-    spline_road_y.set_points(maps_s, maps_y);
+    spline_road_x.set_points(spline_s, spline_x);
+    spline_road_y.set_points(spline_s, spline_y);
     splines_initialized = true;
   }
+}
+
+void RoadGeometry::init(const RoadGeometry& r){
+  this->maps_s = r.maps_s;
+  this->maps_x = r.maps_x;
+  this->maps_y = r.maps_y;
+  this->max_s = r.max_s;
+  this->spline_road_x = r.spline_road_x;
+  this->spline_road_y = r.spline_road_y;
+  this->spline_s = r.spline_s;
+  this->spline_x = r.spline_x;
+  this->spline_y = r.spline_y;
+  this->splines_initialized = r.splines_initialized;
+}
+// Constructor
+RoadGeometry::RoadGeometry(const RoadGeometry& r){
+  this->init(r);
+}
+
+// Destructor
+RoadGeometry::~RoadGeometry(){}
+
+
+/* Return largest S point in map */
+double RoadGeometry::getMaxS() const {
+  return max_s;
+}
+
+// Assignment operator
+RoadGeometry& RoadGeometry::operator = (const RoadGeometry &r){
+  this->init(r);
+  return *this;
+}
+
+
+// Transform from Frenet s,d coordinates to Cartesian x,y
+Point RoadGeometry::getXY(double s, double d) {
 
   // Makes sure that the s requested never exceeds the
   // original maximal value of s.

@@ -8,6 +8,7 @@
 #include <vector>
 #include <functional> // For ref wrapper
 #include "json.hpp"
+#include "spline.h"
 #include "points.h"
 #include "utils.h"
 #include "trajectory.h"
@@ -28,6 +29,7 @@ int main() {
 
   // Waypoint map to read from
   loadMap(map_waypoints, map_waypoints_s, map_waypoints_dx, map_waypoints_dy);
+  RoadGeometry road(map_waypoints, map_waypoints_s);
 
   int max_loops = 10000;
   VectorPoints next_vals;
@@ -36,10 +38,9 @@ int main() {
 
   std::thread logging_thread(logWaypoints, max_loops, std::cref(next_vals), std::ref(log));
 
-  h.onMessage(
-      [&map_waypoints, &map_waypoints_s,&map_waypoints_dx, &map_waypoints_dy,
-      &next_vals, & log](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
-          uWS::OpCode opCode)
+  h.onMessage([&road, &map_waypoints_dx, &map_waypoints_dy,
+  &next_vals, & log](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+      uWS::OpCode opCode)
       {
         // "42" at the start of the message means there's a websocket message event.
         // The 4 signifies a websocket message
@@ -93,7 +94,7 @@ int main() {
               VectorPoints previous_path;
               previous_path.setPoints(previous_path_x_json, previous_path_y_json);
 
-              trajectory(map_waypoints_s, map_waypoints, previous_path, N_samples, car_s, car_d,
+              trajectory(road, previous_path, N_samples, car_s, car_d,
                   car_speed,car_yaw, next_vals);
 
               msgJson["next_x"] = next_vals.getVectorX();
