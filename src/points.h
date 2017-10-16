@@ -21,6 +21,8 @@ constexpr double pi() {
 extern double deg2rad(double x);
 extern double rad2deg(double x);
 
+extern double distance(double x1, double y1, double x2, double y2) ;
+
 class Point {
 public:
   double x;

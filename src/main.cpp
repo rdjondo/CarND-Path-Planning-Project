@@ -78,7 +78,36 @@ int main() {
               double end_path_d = j[1]["end_path_d"];
 
               // Sensor Fusion Data, a list of all other cars on the same side of the road.
+              /*
+               * The data format for each car is: [ id, x, y, vx, vy, s, d].
+               * The id is a unique identifier for that car.
+               * The x, y values are in global map coordinates,
+               * and the vx, vy values are the velocity components,
+               * also in reference to the global map.
+               * Finally s and d are the Frenet coordinates for that car.
+               */
               vector<vector<double>> sensor_fusion = j[1]["sensor_fusion"];
+
+              /* Compute distance between self and other vehicle */
+              for (int vehicle_id = 0; vehicle_id < sensor_fusion.size(); ++vehicle_id) {
+                vector<double> sensed_kinematics = sensor_fusion[vehicle_id];
+                int id = sensed_kinematics[0];
+                double x = sensed_kinematics[1];
+                double y = sensed_kinematics[2];
+                double vx = sensed_kinematics[3];
+                double vy = sensed_kinematics[4];
+                double s = sensed_kinematics[5];
+                double d = sensed_kinematics[6];
+                double dist = distance(car_x, car_y, x, y);
+                double dist_s = s - car_s;
+                double dist_d = d - car_d;
+
+              }
+
+
+
+
+              cout<<"\n"<<j[1]["sensor_fusion"]<<endl;
 
               json msgJson;
 

@@ -37,15 +37,15 @@ static void ideal_trajectory(RoadGeometry &road, VectorPoints &previous_path,
 
   if(isInitialised){
     /* Linear search for initial s point to send back to simulator (motion smoothing)*/
-    if(next_s_vec[0]>6914.14925765991+30){
+    if(next_s_vec[0]>road.getMaxS()){
       for(size_t i = 0; i<next_s_vec.size(); ++i){
-        next_s_vec[i] = fmod(next_s_vec[i],road.getMaxS()); //TODO : Fix this
+        next_s_vec[i] = fmod(next_s_vec[i],road.getMaxS());
       }
     }
     /* Bug here because when closing loop init_s is bigger than car_s */
     for(init_index=0 ;init_s < car_s && init_index<previous_path.size(); ++init_index){
       init_s = next_s_vec[init_index];
-      init_s = fmod(init_s, road.getMaxS()); // TODO : this fmod divisor value is incorrect
+      init_s = fmod(init_s, road.getMaxS());
     }
   } else {
     init_s = car_s;
@@ -84,7 +84,7 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
   double sk_dot;
   double sk_double_dot = 0.0;
 
-  double sT_dot = 20.0*5;
+  double sT_dot = 19.5;
   double sT_double_dot = 0.0;
 
   double dk;
@@ -98,8 +98,7 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
   /* Define next initial position index values */
   static double init_s = -1e9;
   double init_d = -1e9;
-  int init_index;
-  double init_index_offset = 0;
+  int init_index = 0;
 
   if(init_s < -1e8){
     //car_s = 1000;
@@ -110,15 +109,27 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
 
 
   if (next_s_vec.size() > 1) {
-    init_index = 0;
-    /* Linear search for initial s point to send back to simulator (motion smoothing)*/
-    do {
-      init_s = next_s_vec[init_index];
-      init_d = next_d_vec[init_index];
-      ++init_index;
-    } while (init_s <= car_s && init_index < previous_path.size());
 
-    init_index_offset = 0.0;
+    /*  Wrap points in case of loop closure */
+    if(next_s_vec.back() > road.getMaxS() || next_s_vec[0]>road.getMaxS() ){
+      for(size_t i = 0; i<next_s_vec.size(); ++i){
+        next_s_vec[i] = fmod(next_s_vec[i],road.getMaxS());
+      }
+    }
+
+    /* Nearest neighbour to find index corresponding to S frenet coordinate
+     * This is useful to find the current time index */
+    double smallest_distance = 1e10;
+    for (int i = 1; i < next_s_vec.size(); ++i) {
+      double dist = fabs(car_s - (next_s_vec[i-1] + next_s_vec[i])/2 );
+      if(dist<smallest_distance){
+        smallest_distance = dist;
+        init_index = i-1;
+      }
+    }
+
+    init_s = next_s_vec[init_index];
+    init_d = next_d_vec[init_index];
 
   } else {
     init_index = 0;
@@ -136,7 +147,7 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
 
   /* New time this is an ugly hyper-parameter optimization.
    * 13 is a "magic" number that compensates for the computation lag */
-  double delay_t = ((double)init_index + init_index_offset) * delta_t;
+  double delay_t = ((double)init_index ) * delta_t;
 
   /* Display estimated telemetry from old plan Frenet S axis  */
   sk = init_s;
@@ -148,7 +159,7 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
 
   //TODO: Only allow for lane change if speed s_dot greater than minimal speed.
   double dT = 6.0;
-  if(((int)floor(car_s/300))%2==0){
+  if(((int)floor(car_s/300))%2==0 && sk_dot>10){
     dT = 2.0;
   }
 
@@ -161,21 +172,15 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
   dk_double_dot = polyval(acc_poly_d, delay_t);
 
 
-  double virtual_acceleration = 2.0; /* virtual acceleration in m/s^2 */
+  double virtual_acceleration = 3.0; /* virtual acceleration in m/s^2 */
 
   vector<double> coeff_s = optim_jmt_affine(sk, sk_dot, sk_double_dot, sT_dot,
       sT_double_dot, virtual_acceleration);
 
-  double T = 6.0;
+  double T = 8.0;
   vector<double> coeff_d = optim_jmt_quadratic( dk,  dk_dot,  dk_double_dot,
       dT,  dT_dot,  dT_double_dot, T);
 
-  if(fabs(coeff_s[0])>1e4 || fabs(coeff_d[0])>1e4){
-    cout<<"ALERT LARGE VALUE !!"<<endl;
-  }
-  if(sk>6925.97){
-    cout<<"GETTING CLOSE TO CRITICAL ZONE !!"<<endl;
-  }
 
   coeff_s_old = coeff_s;
   coeff_d_old = coeff_d;
@@ -206,10 +211,10 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
 void trajectory(RoadGeometry &road, VectorPoints &previous_path,
     const int N_samples, double car_s, double car_d, double car_speed, double car_yaw,
     VectorPoints &next_val_xy) {
-  //my_trajectory(road, previous_path, N_samples,
-  //    car_s, car_d, car_speed, car_yaw, next_val_xy);
-  ideal_trajectory(road, previous_path, N_samples,
-      car_s, car_d, car_speed, next_val_xy);
+  my_trajectory(road, previous_path, N_samples,
+      car_s, car_d, car_speed, car_yaw, next_val_xy);
+//  ideal_trajectory(road, previous_path, N_samples,
+//      car_s, car_d, car_speed, next_val_xy);
 
 }
 
