@@ -64,8 +64,8 @@ static void ideal_trajectory(RoadGeometry &road, VectorPoints &previous_path,
 }
 
 static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
-    const int N_samples, double car_s, double car_d, double car_speed, double car_yaw,
-    VectorPoints &next_val_xy) {
+    const int N_samples, double car_s, double car_d, double car_speed,
+    double target_car_speed, double target_car_d, VectorPoints &next_val_xy) {
   // DONE: smoothen road path between the waypoints using Spline
 
   // DONE: Calculate and control SDC vehicle speed and lane position
@@ -84,7 +84,7 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
   double sk_dot;
   double sk_double_dot = 0.0;
 
-  double sT_dot = 19.5;
+  double sT_dot = target_car_speed;
   double sT_double_dot = 0.0;
 
   double dk;
@@ -158,10 +158,7 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
 
 
   //TODO: Only allow for lane change if speed s_dot greater than minimal speed.
-  double dT = 6.0;
-  if(((int)floor(car_s/300))%2==0 && sk_dot>10){
-    dT = 2.0;
-  }
+  double dT = target_car_d;
 
   /* Display estimated telemetry from old plan for Frenet D axis */
   dk = init_d;
@@ -172,7 +169,7 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
   dk_double_dot = polyval(acc_poly_d, delay_t);
 
 
-  double virtual_acceleration = 3.0; /* virtual acceleration in m/s^2 */
+  double virtual_acceleration = 1.5; /* virtual acceleration in m/s^2 */
 
   vector<double> coeff_s = optim_jmt_affine(sk, sk_dot, sk_double_dot, sT_dot,
       sT_double_dot, virtual_acceleration);
@@ -209,10 +206,10 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
 }
 
 void trajectory(RoadGeometry &road, VectorPoints &previous_path,
-    const int N_samples, double car_s, double car_d, double car_speed, double car_yaw,
-    VectorPoints &next_val_xy) {
-  my_trajectory(road, previous_path, N_samples,
-      car_s, car_d, car_speed, car_yaw, next_val_xy);
+    const int N_samples, double car_s, double car_d, double car_speed,
+    double target_car_speed, double target_car_d, VectorPoints &next_val_xy) {
+  my_trajectory(road, previous_path, N_samples, car_s, car_d, car_speed,
+      target_car_speed, target_car_d, next_val_xy);
 //  ideal_trajectory(road, previous_path, N_samples,
 //      car_s, car_d, car_speed, next_val_xy);
 

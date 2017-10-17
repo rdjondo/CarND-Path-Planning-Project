@@ -12,6 +12,7 @@
 #include "points.h"
 #include "utils.h"
 #include "trajectory.h"
+#include "planner.h"
 
 using namespace std;
 
@@ -38,7 +39,9 @@ int main() {
 
   std::thread logging_thread(logWaypoints, max_loops, std::cref(next_vals), std::ref(log));
 
-  h.onMessage([&road, &map_waypoints_dx, &map_waypoints_dy,
+  DrivingState planner(road) ;
+
+  h.onMessage([&road, &planner, &map_waypoints_dx, &map_waypoints_dy,
   &next_vals, & log](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
       uWS::OpCode opCode)
       {
@@ -89,25 +92,11 @@ int main() {
               vector<vector<double>> sensor_fusion = j[1]["sensor_fusion"];
 
               /* Compute distance between self and other vehicle */
-              for (int vehicle_id = 0; vehicle_id < sensor_fusion.size(); ++vehicle_id) {
-                vector<double> sensed_kinematics = sensor_fusion[vehicle_id];
-                int id = sensed_kinematics[0];
-                double x = sensed_kinematics[1];
-                double y = sensed_kinematics[2];
-                double vx = sensed_kinematics[3];
-                double vy = sensed_kinematics[4];
-                double s = sensed_kinematics[5];
-                double d = sensed_kinematics[6];
-                double dist = distance(car_x, car_y, x, y);
-                double dist_s = s - car_s;
-                double dist_d = d - car_d;
-
-              }
-
-
-
-
-              cout<<"\n"<<j[1]["sensor_fusion"]<<endl;
+              planner.setSensorFusion(sensor_fusion);
+              planner.setVehicleState(car_x, car_y, car_s, car_d, car_yaw, car_speed);
+              planner.nextState();
+              double target_car_speed = planner.getTargetCarSpeed();
+              double target_car_d = planner.getTargetCarD();
 
               json msgJson;
 
@@ -124,7 +113,7 @@ int main() {
               previous_path.setPoints(previous_path_x_json, previous_path_y_json);
 
               trajectory(road, previous_path, N_samples, car_s, car_d,
-                  car_speed,car_yaw, next_vals);
+                  car_speed, target_car_speed, target_car_d, next_vals);
 
               msgJson["next_x"] = next_vals.getVectorX();
               msgJson["next_y"] = next_vals.getVectorY();

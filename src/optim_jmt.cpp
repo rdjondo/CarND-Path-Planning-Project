@@ -8,6 +8,8 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>    // For std::max() function
+#include <mutex>
+#include "json.hpp"
 #include "jmt.h"
 #include "optim_jmt.h"
 

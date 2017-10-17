@@ -14,7 +14,7 @@ set(EXECUTABLE path_planning)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-set(COMMON_SRC utils.cpp jmt.cpp optim_jmt.cpp points.cpp trajectory.cpp)
+set(COMMON_SRC utils.cpp jmt.cpp optim_jmt.cpp points.cpp trajectory.cpp planner.cpp)
 
 ####################################################
 # BUILD FOR DEBUG

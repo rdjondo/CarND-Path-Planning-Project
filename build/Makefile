@@ -204,6 +204,33 @@ optim_jmt.cpp.s:
 	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/optim_jmt.cpp.s
 .PHONY : optim_jmt.cpp.s
 
+planner.o: planner.cpp.o
+
+.PHONY : planner.o
+
+# target to build an object file
+planner.cpp.o:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/planner.cpp.o
+.PHONY : planner.cpp.o
+
+planner.i: planner.cpp.i
+
+.PHONY : planner.i
+
+# target to preprocess a source file
+planner.cpp.i:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/planner.cpp.i
+.PHONY : planner.cpp.i
+
+planner.s: planner.cpp.s
+
+.PHONY : planner.s
+
+# target to generate assembly for a file
+planner.cpp.s:
+	$(MAKE) -f CMakeFiles/path_planning.dir/build.make CMakeFiles/path_planning.dir/planner.cpp.s
+.PHONY : planner.cpp.s
+
 points.o: points.cpp.o
 
 .PHONY : points.o
@@ -303,6 +330,9 @@ help:
 	@echo "... optim_jmt.o"
 	@echo "... optim_jmt.i"
 	@echo "... optim_jmt.s"
+	@echo "... planner.o"
+	@echo "... planner.i"
+	@echo "... planner.s"
 	@echo "... points.o"
 	@echo "... points.i"
 	@echo "... points.s"
