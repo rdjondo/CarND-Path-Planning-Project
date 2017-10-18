@@ -17,6 +17,9 @@
 
 using namespace std;
 
+/* TODO: move the constant inside the class*/
+static const double MAX_SPEED = 21.0;
+
 DrivingState::DrivingState(RoadGeometry & road_init) {
   sensor_fusion.clear();
   road = &road_init;
@@ -96,14 +99,20 @@ void DrivingState::nextState() {
        * 2 possible targets:  speed = max speed or speed = matching speed of vehicle in front
        *
        * By default, use Max speed */
-      target_car_speed = 21.0;
+      target_car_speed = MAX_SPEED;
 
       int vehicle_lead = getVehicleLeadIdx(car_d);
       /* Assign its speed as target speed */
       SensorFusion veh = sensor_fusion[vehicle_lead];
       if (vehicle_lead >= 0) {
-        target_car_speed = sqrt(veh.vx * veh.vx + veh.vy * veh.vy)*0.98;
-        if(veh.s - car_s<10) target_car_speed = max(0.0, target_car_speed - 2.0);
+        target_car_speed = min(MAX_SPEED, sqrt(veh.vx * veh.vx + veh.vy * veh.vy)*1.01); // staturate the speed to MAX_SPEED for safety
+        double delta_s = veh.s - car_s;
+        const double dist_margin = 15.0;
+        if(delta_s < dist_margin) {
+            double gain = 0.1;
+            double speed_adjustment = gain*(dist_margin-delta_s);
+            target_car_speed = max(0.0, target_car_speed - speed_adjustment);
+        }
       }
       /**
        * TRANSITIONS :
@@ -184,9 +193,10 @@ void DrivingState::setVehicleState(double car_x, double car_y, double car_s,
   this->car_speed = car_speed;
 }
 
+/* TODO: move the constant inside the class*/
+static const double DIST_VEH_LEAD = 50;
 int DrivingState::getVehicleLeadIdx(double lane_d) {
   /* Find leading vehicle */
-  double dist_veh_lead = 50;
   int vehicle_lead = -1;
 
   for (int vehicle_id = 0; vehicle_id < sensor_fusion.size(); ++vehicle_id) {
@@ -200,18 +210,20 @@ int DrivingState::getVehicleLeadIdx(double lane_d) {
     double dist_d = kine.d - lane_d;
     if (fabs(dist_d) < 3.0) {
       /* If vehicle in same lane*/
-      if (0 < dist_s && dist_s < dist_veh_lead) {
+      if (0 < dist_s && dist_s < DIST_VEH_LEAD) {
         /* If vehicle in front and closer than any other vehicle below a distance threshold*/
-        dist_veh_lead = dist_s;
+        DIST_VEH_LEAD = dist_s;
         vehicle_lead = vehicle_id;
       }
     }
   }
   return vehicle_lead;
 }
+
+/* TODO: move the constant inside the class*/
+static const double DIST_VEH_LEAD_FOLLOW = 25;
 int DrivingState::getVehicleFollowingIdx(double lane_d) {
-  /* Find leading vehicle */
-  double dist_veh_lead = 25;
+  /* Find following vehicle */
   int vehicle_lead = -1;
 
   for (int vehicle_id = 0; vehicle_id < sensor_fusion.size(); ++vehicle_id) {
@@ -225,9 +237,9 @@ int DrivingState::getVehicleFollowingIdx(double lane_d) {
     double dist_d = kine.d - lane_d;
     if (fabs(dist_d) < 3.0) {
       /* If vehicle in same lane*/
-      if (0 < dist_s && dist_s < dist_veh_lead) {
+      if (0 < dist_s && dist_s < DIST_VEH_LEAD_FOLLOW) {
         /* If vehicle in behind and closer than any other vehicle below a distance threshold*/
-        dist_veh_lead = dist_s;
+        DIST_VEH_LEAD_FOLLOW = dist_s;
         vehicle_lead = vehicle_id;
       }
     }
