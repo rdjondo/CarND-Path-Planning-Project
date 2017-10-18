@@ -18,7 +18,10 @@
 using namespace std;
 
 /* TODO: move the constant inside the class*/
-static const double MAX_SPEED = 21.0;
+static const double MAX_SPEED = 20.2;
+
+static const double LARGE_VALUE = 1e6;
+static const double VERY_LARGE_VALUE = 1e9;
 
 DrivingState::DrivingState(RoadGeometry & road_init) {
   sensor_fusion.clear();
@@ -38,7 +41,6 @@ DrivingState::DrivingState(RoadGeometry & road_init) {
 DrivingState::~DrivingState() {
 }
 
-
 double DrivingState::getKeepLaneCost() {
   int vehicle_lead = getVehicleLeadIdx(car_d);
   double dist = 1e6;
@@ -47,48 +49,115 @@ double DrivingState::getKeepLaneCost() {
   if (vehicle_lead >= 0) {
     SensorFusion veh = sensor_fusion[vehicle_lead];
     dist = fabs(veh.s - car_s);
-    double delta_speed = std::min(0.0,
+    double delta_speed = max(0.0,
         car_speed - sqrt(veh.vx * veh.vx + veh.vy * veh.vy));
-    time_to_collision = (dist) / (1e-2 + delta_speed);
+    time_to_collision = (dist) / (1e-3 + delta_speed);
   }
-  double cost = dist + time_to_collision;
+  double cost = 1 / (1e-2 + dist) + 10 / (time_to_collision);
+
+  int vehicle_follow = getVehicleFollowingIdx(car_d);
+  if (vehicle_follow >= 0) {
+    SensorFusion veh = sensor_fusion[vehicle_follow];
+    dist = fabs(veh.s - car_s);
+    double delta_speed = max(0.0,
+        sqrt(veh.vx * veh.vx + veh.vy * veh.vy)-car_speed);
+    time_to_collision = (dist) / (1e-3 + delta_speed);
+  }
+  cost = 1 / (1e-2 + dist) + 1 / (time_to_collision);
   return cost;
 }
 
-double DrivingState::getPrepareChangingLeftCost() {
-  double dist = 1e6;
-  double time_to_collision = 1000;
+double DrivingState::getPrepareChangingLaneCost(double lane_d) {
+  double dist = LARGE_VALUE;
+  double time_to_collision = LARGE_VALUE;
 
-  int vehicle_lead = getVehicleLeadIdx(car_d  - 4.0 );
-  int vehicle_follow = getVehicleFollowingIdx(car_d - 4.0);
+  int vehicle_lead = getVehicleLeadIdx(target_car_d + lane_d);
+  int vehicle_follow = getVehicleFollowingIdx(target_car_d + lane_d);
 
   if (vehicle_lead >= 0) {
     SensorFusion veh = sensor_fusion[vehicle_lead];
     dist = fabs(veh.s - car_s);
-    double delta_speed = std::min(0.0,
+    double delta_speed = max(0.0,
         car_speed - sqrt(veh.vx * veh.vx + veh.vy * veh.vy));
-    time_to_collision = (dist) / (1e-2 + delta_speed);
+    time_to_collision = (dist) / (1e-3 + delta_speed);
   }
-  double cost = dist + time_to_collision;
-
+  double cost;
+  cost = 1 / (1e-2 + dist) + 2 / (time_to_collision);
+  if(dist < 15){
+    cost = LARGE_VALUE;
+  }
   if (vehicle_follow >= 0) {
-    SensorFusion veh = sensor_fusion[vehicle_lead];
+    SensorFusion veh = sensor_fusion[vehicle_follow];
     dist = fabs(veh.s - car_s);
-    double delta_speed = std::min(0.0,
-        car_speed - sqrt(veh.vx * veh.vx + veh.vy * veh.vy));
-    time_to_collision = (dist) / (1e-2 + delta_speed);
+    double delta_speed = max(0.0,
+        sqrt(veh.vx * veh.vx + veh.vy * veh.vy)-car_speed);
+    time_to_collision = (dist) / (1e-3 + delta_speed);
   }
-  cost = cost + dist + time_to_collision;
-
+  cost = 1 / (1e-2 + dist) + 2 / (time_to_collision);
+  if(dist < 15){
+    cost = LARGE_VALUE;
+  }
   return cost;
+}
+
+double DrivingState::getChangingLeftCost() {
+  const double lane_d = -4.0;
+  if (target_car_d + lane_d <= 0) {
+    return VERY_LARGE_VALUE;
+  } else {
+    return getPrepareChangingLaneCost(lane_d);
+  }
+}
+
+double DrivingState::getChangingRightCost() {
+  const double lane_d = 4.0;
+  if (target_car_d + lane_d >= 12) {
+    return VERY_LARGE_VALUE;
+  } else {
+    return getPrepareChangingLaneCost(lane_d);
+  }
+}
+
+void DrivingState::adaptativeCruiseControl() {
+  /* By default, use Max speed */
+  target_car_speed = MAX_SPEED;
+
+  int vehicle_lead = getVehicleLeadIdx(car_d);
+  /* Assign its speed as target speed */
+  SensorFusion veh = sensor_fusion[vehicle_lead];
+  if (vehicle_lead >= 0) {
+    double delta_s = veh.s - car_s;
+    const double braking_margin = 20.0;
+    const double slowing_margin = 40.0;
+    double leading_car_speed = sqrt(veh.vx * veh.vx + veh.vy * veh.vy);
+
+    if (delta_s < braking_margin) {
+      // saturate the speed to MAX_SPEED for safety
+      double gain = 2;
+      double speed_adjustment = gain * (braking_margin - delta_s);
+      target_car_speed = max(0.0,
+          min(leading_car_speed, leading_car_speed - speed_adjustment));
+    } else if (delta_s < slowing_margin) {
+      double gain = 1.01;
+      // saturate the speed to MAX_SPEED for safety
+      target_car_speed = max(0.0, min(MAX_SPEED, leading_car_speed * gain));
+    }
+  }
 }
 
 void DrivingState::nextState() {
 
-  double prepKeepLaneCost = getKeepLaneCost();
-  double prepChangeLeftCost = getPrepareChangingLeftCost();
-  //double changeLeftCost = getChangingLeftCost();
-  //double prepChangeRightCost = getPrepareChangingRightCost();
+  /* Manage vehicle speed*/
+  adaptativeCruiseControl();
+
+
+  double keepLaneCost = getKeepLaneCost();
+  double changeLeftCost = getChangingLeftCost();
+  double changeRightCost = getChangingRightCost();
+
+  cout << "KL cost:" << keepLaneCost << "  ";
+  cout << "PL cost:" << changeLeftCost << "  ";
+  cout << "PR cost:" << changeRightCost << endl;
 
   double cost;
 
@@ -98,73 +167,63 @@ void DrivingState::nextState() {
       /* TARGETS
        * 2 possible targets:  speed = max speed or speed = matching speed of vehicle in front
        *
-       * By default, use Max speed */
-      target_car_speed = MAX_SPEED;
 
-      int vehicle_lead = getVehicleLeadIdx(car_d);
-      /* Assign its speed as target speed */
-      SensorFusion veh = sensor_fusion[vehicle_lead];
-      if (vehicle_lead >= 0) {
-        target_car_speed = min(MAX_SPEED, sqrt(veh.vx * veh.vx + veh.vy * veh.vy)*1.01); // staturate the speed to MAX_SPEED for safety
-        double delta_s = veh.s - car_s;
-        const double dist_margin = 15.0;
-        if(delta_s < dist_margin) {
-            double gain = 0.1;
-            double speed_adjustment = gain*(dist_margin-delta_s);
-            target_car_speed = max(0.0, target_car_speed - speed_adjustment);
-        }
-      }
       /**
        * TRANSITIONS :
        *   KEEP_LANE
-       *   PREPARE_CHANGING_LEFT,
-       *   PREPARE_CHANGING_RIGHT,
+       *   CHANGING_LEFT,
+       *   CHANGING_RIGHT,
        */
 
-      if (prepChangeLeftCost < prepKeepLaneCost) {
-        cost = prepChangeLeftCost;
-        next_state = PREPARE_CHANGING_LEFT;
+      /* Find minimal cost to calculate next state*/
+      double temp_target_car_d = target_car_d;
+      if (changeLeftCost < keepLaneCost) {
+        cost = changeLeftCost;
+        next_state = CHANGING_LEFT;
+        temp_target_car_d = target_car_d - 4.0;
       } else {
-        cost = prepKeepLaneCost;
+        cost = keepLaneCost;
         next_state = KEEP_LANE;
       }
-      /*if (prepChangeRightCost < cost) {
-        cost = prepChangeRightCost;
-        next_state = PREPARE_CHANGING_RIGHT;
-      }*/
+
+      if (changeRightCost < cost) {
+       next_state = CHANGING_RIGHT;
+       temp_target_car_d = target_car_d + 4.0;
+       }
+
+      target_car_d = temp_target_car_d;
     }
       break;
 
-    case PREPARE_CHANGING_LEFT:
+    case CHANGING_LEFT:
       /**
        * TRANSITIONS :
        *   KEEP_LANE
-       *   PREPARE_CHANGING_LEFT,
-       *   CHANGING_LEFT,
-       *   PREPARE_CHANGING_RIGHT,
        */
-
-      if (prepChangeLeftCost < prepKeepLaneCost) {
-        cost = prepChangeLeftCost;
-        next_state = PREPARE_CHANGING_LEFT;
-      } else {
-        cost = prepKeepLaneCost;
+      if (fabs(target_car_d - car_d) < 0.2) {
         next_state = KEEP_LANE;
+
       }
-      /*if (prepChangeRightCost < cost) {
-        cost = prepChangeRightCost;
-        next_state = PREPARE_CHANGING_RIGHT;
+
+      break;
+
+    case CHANGING_RIGHT:
+      /**
+       * TRANSITIONS :
+       *   KEEP_LANE
+       */
+      if (fabs(target_car_d - car_d) < 0.2) {
+        next_state = KEEP_LANE;
+
       }
-      if (changeLeftCost < cost) {
-        cost = prepChangeRightCost;
-        next_state = CHANGING_LEFT;
-      }*/
+
       break;
 
     default:
       current_state = KEEP_LANE;
       break;
   }
+  current_state = next_state;
 }
 
 void DrivingState::setSensorFusion(
@@ -194,25 +253,26 @@ void DrivingState::setVehicleState(double car_x, double car_y, double car_s,
 }
 
 /* TODO: move the constant inside the class*/
-static const double DIST_VEH_LEAD = 50;
+static const double DIST_VEH_LEAD = 75;
 int DrivingState::getVehicleLeadIdx(double lane_d) {
   /* Find leading vehicle */
+  double dist_veh_lead = DIST_VEH_LEAD;
   int vehicle_lead = -1;
 
   for (int vehicle_id = 0; vehicle_id < sensor_fusion.size(); ++vehicle_id) {
     SensorFusion kine = sensor_fusion[vehicle_id];
-    double kine_s_temp  = kine.s ;
+    double kine_s_temp = kine.s;
     if (car_s > 6000 && kine_s_temp < 1000) {
       /* Manage wrapping */
       kine_s_temp += road->getMaxS();
     }
     double dist_s = kine_s_temp - car_s;
     double dist_d = kine.d - lane_d;
-    if (fabs(dist_d) < 3.0) {
+    if (fabs(dist_d) < 3.5) {
       /* If vehicle in same lane*/
-      if (0 < dist_s && dist_s < DIST_VEH_LEAD) {
+      if (0 < dist_s && dist_s < dist_veh_lead) {
         /* If vehicle in front and closer than any other vehicle below a distance threshold*/
-        DIST_VEH_LEAD = dist_s;
+        dist_veh_lead = dist_s;
         vehicle_lead = vehicle_id;
       }
     }
@@ -221,25 +281,26 @@ int DrivingState::getVehicleLeadIdx(double lane_d) {
 }
 
 /* TODO: move the constant inside the class*/
-static const double DIST_VEH_LEAD_FOLLOW = 25;
+static const double DIST_VEH_LEAD_FOLLOW = 100;
 int DrivingState::getVehicleFollowingIdx(double lane_d) {
-  /* Find following vehicle */
+  /* Find leading vehicle */
+  double dist_veh_lead = DIST_VEH_LEAD_FOLLOW;
   int vehicle_lead = -1;
 
   for (int vehicle_id = 0; vehicle_id < sensor_fusion.size(); ++vehicle_id) {
     SensorFusion kine = sensor_fusion[vehicle_id];
     double car_s_temp = car_s;
-    if ( kine.s > 6000 && car_s_temp  < 1000) {
+    if (kine.s > 6000 && car_s_temp < 1000) {
       /* Manage wrapping */
       car_s_temp += road->getMaxS();
     }
-    double dist_s = car_s_temp - kine.s ;
+    double dist_s = car_s_temp - kine.s;
     double dist_d = kine.d - lane_d;
-    if (fabs(dist_d) < 3.0) {
+    if (fabs(dist_d) < 3.8) {
       /* If vehicle in same lane*/
-      if (0 < dist_s && dist_s < DIST_VEH_LEAD_FOLLOW) {
+      if (0 <= dist_s && dist_s < dist_veh_lead) {
         /* If vehicle in behind and closer than any other vehicle below a distance threshold*/
-        DIST_VEH_LEAD_FOLLOW = dist_s;
+        dist_veh_lead = dist_s;
         vehicle_lead = vehicle_id;
       }
     }

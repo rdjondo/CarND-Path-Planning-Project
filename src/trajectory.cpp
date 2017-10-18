@@ -100,13 +100,6 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
   double init_d = -1e9;
   int init_index = 0;
 
-  if(init_s < -1e8){
-    //car_s = 1000;
-  }
-  if(previous_path.size()==0){
-    cout<<" PREVIOUS PATH SIZE IS 0 !!"<<endl;
-  }
-
 
   if (next_s_vec.size() > 1) {
 
@@ -174,7 +167,8 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
   vector<double> coeff_s = optim_jmt_affine(sk, sk_dot, sk_double_dot, sT_dot,
       sT_double_dot, virtual_acceleration);
 
-  double T = 8.0;
+  double virtual_speed = 0.5; /* virtual speed in m/s */
+  const double T = max(4.0, min(15.0, fabs(dk - dT)/ virtual_speed));
   vector<double> coeff_d = optim_jmt_quadratic( dk,  dk_dot,  dk_double_dot,
       dT,  dT_dot,  dT_double_dot, T);
 
