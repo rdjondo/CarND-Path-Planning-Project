@@ -78,7 +78,7 @@ void logWaypoints(int max_loops, const VectorPoints & next_vals, DoubleBuffer<Ve
 
     log.get().printCsv(logfile, i);
 
-    this_thread::sleep_for(chrono::milliseconds(200));
+    this_thread::sleep_for(chrono::milliseconds(100));
   }
 
   logfile<<endl;

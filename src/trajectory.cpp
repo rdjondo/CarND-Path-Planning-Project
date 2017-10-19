@@ -168,7 +168,7 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
       sT_double_dot, virtual_acceleration);
 
   double virtual_speed = 0.5; /* virtual speed in m/s */
-  const double T = max(4.0, min(15.0, fabs(dk - dT)/ virtual_speed));
+  const double T = max(4.0, min(20.0, fabs(dk - dT)/ virtual_speed));
   vector<double> coeff_d = optim_jmt_quadratic( dk,  dk_dot,  dk_double_dot,
       dT,  dT_dot,  dT_double_dot, T);
 
@@ -184,17 +184,13 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
   next_s_vec.clear();
   next_d_vec.clear();
 
-  for (int i = 0; i < N_samples; ++i) {
-    double next_s = polyval(coeff_s, (i) * delta_t);
-    double next_d = polyval(coeff_d, (i) * delta_t);
+  for (int ti = 0; ti < N_samples; ++ti) {
+    double next_s = polyval(coeff_s, (ti+1.0) * delta_t);
+    double next_d = polyval(coeff_d, (ti+1.0) * delta_t);
     next_s_vec.push_back(next_s);
     next_d_vec.push_back(next_d);
 
     Point pveh = road.getXY(next_s, next_d);
-    //vector<double> xy = mapCoordToVehicleCoordinates(car_x, car_y, car_yaw, xy_veh[0], xy_veh[1]);
-    //xy = mapPtVehCoordToMapCoordinates(car_x, car_y, car_yaw, xy[0], xy[1]);
-    //auto sd = getFrenet(pveh.x, pveh.y, car_yaw, map_waypoints.getVectorX(),
-    //    map_waypoints.getVectorY());
     next_val_xy.push_back(pveh);
   }
 }

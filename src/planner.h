@@ -60,14 +60,15 @@ private:
   double target_car_d;
 
   double getKeepLaneCost();
-  double getPrepareChangingLaneCost(double lane_d);
+  double getTimeToCollision(const size_t vehicle_lead);
+  double getPrepareChangingLaneCost(const double lane_d);
   double getPrepareChangingLeftCost();
   double getPrepareChangingRightCost();
   double getChangingRightCost();
   double getChangingLeftCost();
   void adaptativeCruiseControl();
-  int getVehicleLeadIdx(double lane_d);
-  int getVehicleFollowingIdx(double lane_d);
+  int getVehicleLeadIdx(const double lane_d);
+  int getVehicleFollowingIdx(const double lane_d);
 };
 
 

@@ -32,7 +32,7 @@ int main() {
   loadMap(map_waypoints, map_waypoints_s, map_waypoints_dx, map_waypoints_dy);
   RoadGeometry road(map_waypoints, map_waypoints_s);
 
-  int max_loops = 10000;
+  int max_loops = 500;
   VectorPoints next_vals;
   next_vals.clear();
   DoubleBuffer<VectorPoints> log;
@@ -100,7 +100,7 @@ int main() {
 
               json msgJson;
 
-              const int N_samples = 170;//(int) T_optimised/delta_t;
+              const int N_samples = 64;//(int) T_optimised/delta_t;
               next_vals.reserve(N_samples);
               next_vals.clear();
 
@@ -124,7 +124,7 @@ int main() {
               ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
               // std::cout<< "DOWN:" << j<<std::endl;
               // std::cout<< "UP:" << msg<<std::endl;
-              this_thread::sleep_for(chrono::milliseconds(500));
+              this_thread::sleep_for(chrono::milliseconds(250));
             }
           }
           else

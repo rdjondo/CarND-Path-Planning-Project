@@ -20,6 +20,7 @@ using namespace std;
 /* TODO: move the constant inside the class*/
 static const double MAX_SPEED = 20.2;
 
+static const double SMALL_VALUE = 1e-3;
 static const double LARGE_VALUE = 1e6;
 static const double VERY_LARGE_VALUE = 1e9;
 
@@ -41,62 +42,49 @@ DrivingState::DrivingState(RoadGeometry & road_init) {
 DrivingState::~DrivingState() {
 }
 
+
+double DrivingState::getTimeToCollision(const size_t vehicle_idx){
+  double time_to_collision = LARGE_VALUE;
+  if (vehicle_idx >= 0) {
+    SensorFusion veh = sensor_fusion[vehicle_idx];
+    double dist = veh.s - car_s;
+    double delta_speed = car_speed - sqrt(veh.vx * veh.vx + veh.vy * veh.vy);
+    time_to_collision = (dist) / (SMALL_VALUE + delta_speed);
+
+    const double forbidden_margin = 15.0;
+    if(fabs(dist)<forbidden_margin){
+      time_to_collision = SMALL_VALUE;
+    } else if(time_to_collision < 0){
+      time_to_collision = LARGE_VALUE;
+    }
+  }
+  return time_to_collision;
+}
+
 double DrivingState::getKeepLaneCost() {
   int vehicle_lead = getVehicleLeadIdx(car_d);
-  double dist = 1e6;
-  double time_to_collision = 1000;
+  double time_to_collision = getTimeToCollision(vehicle_lead);
 
-  if (vehicle_lead >= 0) {
-    SensorFusion veh = sensor_fusion[vehicle_lead];
-    dist = fabs(veh.s - car_s);
-    double delta_speed = max(0.0,
-        car_speed - sqrt(veh.vx * veh.vx + veh.vy * veh.vy));
-    time_to_collision = (dist) / (1e-3 + delta_speed);
-  }
-  double cost = 1 / (1e-2 + dist) + 10 / (time_to_collision);
-
-  int vehicle_follow = getVehicleFollowingIdx(car_d);
-  if (vehicle_follow >= 0) {
-    SensorFusion veh = sensor_fusion[vehicle_follow];
-    dist = fabs(veh.s - car_s);
-    double delta_speed = max(0.0,
-        sqrt(veh.vx * veh.vx + veh.vy * veh.vy)-car_speed);
-    time_to_collision = (dist) / (1e-3 + delta_speed);
-  }
-  cost = 1 / (1e-2 + dist) + 1 / (time_to_collision);
+  cout << "KeepLane time: " << time_to_collision << "  ";
+  double cost = min(LARGE_VALUE, 1 / (SMALL_VALUE + time_to_collision));
   return cost;
 }
 
-double DrivingState::getPrepareChangingLaneCost(double lane_d) {
-  double dist = LARGE_VALUE;
+double DrivingState::getPrepareChangingLaneCost(const double lane_d) {
   double time_to_collision = LARGE_VALUE;
 
   int vehicle_lead = getVehicleLeadIdx(target_car_d + lane_d);
   int vehicle_follow = getVehicleFollowingIdx(target_car_d + lane_d);
 
-  if (vehicle_lead >= 0) {
-    SensorFusion veh = sensor_fusion[vehicle_lead];
-    dist = fabs(veh.s - car_s);
-    double delta_speed = max(0.0,
-        car_speed - sqrt(veh.vx * veh.vx + veh.vy * veh.vy));
-    time_to_collision = (dist) / (1e-3 + delta_speed);
-  }
-  double cost;
-  cost = 1 / (1e-2 + dist) + 2 / (time_to_collision);
-  if(dist < 15){
-    cost = LARGE_VALUE;
-  }
-  if (vehicle_follow >= 0) {
-    SensorFusion veh = sensor_fusion[vehicle_follow];
-    dist = fabs(veh.s - car_s);
-    double delta_speed = max(0.0,
-        sqrt(veh.vx * veh.vx + veh.vy * veh.vy)-car_speed);
-    time_to_collision = (dist) / (1e-3 + delta_speed);
-  }
-  cost = 1 / (1e-2 + dist) + 2 / (time_to_collision);
-  if(dist < 15){
-    cost = LARGE_VALUE;
-  }
+  time_to_collision = getTimeToCollision(vehicle_lead);
+  cout << "Lead time " << lane_d << ": " << time_to_collision << "  ";
+  double cost = 1 / (SMALL_VALUE + time_to_collision);
+
+  time_to_collision = getTimeToCollision(vehicle_follow);
+  cout << "Foll time " << lane_d << ": " << time_to_collision << "  ";
+  cost += 1 / (SMALL_VALUE + time_to_collision);
+
+  cost = min(LARGE_VALUE, cost);
   return cost;
 }
 
@@ -127,8 +115,8 @@ void DrivingState::adaptativeCruiseControl() {
   SensorFusion veh = sensor_fusion[vehicle_lead];
   if (vehicle_lead >= 0) {
     double delta_s = veh.s - car_s;
-    const double braking_margin = 20.0;
-    const double slowing_margin = 40.0;
+    const double braking_margin = 25.0;
+    const double slowing_margin = 45.0;
     double leading_car_speed = sqrt(veh.vx * veh.vx + veh.vy * veh.vy);
 
     if (delta_s < braking_margin) {
@@ -152,8 +140,12 @@ void DrivingState::nextState() {
 
 
   double keepLaneCost = getKeepLaneCost();
+  cout<<endl;
   double changeLeftCost = getChangingLeftCost();
+  cout<<endl;
   double changeRightCost = getChangingRightCost();
+
+  cout<<endl;
 
   cout << "KL cost:" << keepLaneCost << "  ";
   cout << "PL cost:" << changeLeftCost << "  ";
@@ -163,12 +155,9 @@ void DrivingState::nextState() {
 
   switch (current_state) {
     case KEEP_LANE: {
-
       /* TARGETS
        * 2 possible targets:  speed = max speed or speed = matching speed of vehicle in front
        *
-
-      /**
        * TRANSITIONS :
        *   KEEP_LANE
        *   CHANGING_LEFT,
@@ -177,13 +166,13 @@ void DrivingState::nextState() {
 
       /* Find minimal cost to calculate next state*/
       double temp_target_car_d = target_car_d;
-      if (changeLeftCost < keepLaneCost) {
+      if (changeLeftCost > keepLaneCost) { /* Priority is to keep in lane */
+        cost = keepLaneCost;
+        next_state = KEEP_LANE;
+      } else {
         cost = changeLeftCost;
         next_state = CHANGING_LEFT;
         temp_target_car_d = target_car_d - 4.0;
-      } else {
-        cost = keepLaneCost;
-        next_state = KEEP_LANE;
       }
 
       if (changeRightCost < cost) {
@@ -202,7 +191,6 @@ void DrivingState::nextState() {
        */
       if (fabs(target_car_d - car_d) < 0.2) {
         next_state = KEEP_LANE;
-
       }
 
       break;
@@ -214,7 +202,6 @@ void DrivingState::nextState() {
        */
       if (fabs(target_car_d - car_d) < 0.2) {
         next_state = KEEP_LANE;
-
       }
 
       break;
@@ -254,7 +241,7 @@ void DrivingState::setVehicleState(double car_x, double car_y, double car_s,
 
 /* TODO: move the constant inside the class*/
 static const double DIST_VEH_LEAD = 75;
-int DrivingState::getVehicleLeadIdx(double lane_d) {
+int DrivingState::getVehicleLeadIdx(const double lane_d) {
   /* Find leading vehicle */
   double dist_veh_lead = DIST_VEH_LEAD;
   int vehicle_lead = -1;
@@ -282,7 +269,7 @@ int DrivingState::getVehicleLeadIdx(double lane_d) {
 
 /* TODO: move the constant inside the class*/
 static const double DIST_VEH_LEAD_FOLLOW = 100;
-int DrivingState::getVehicleFollowingIdx(double lane_d) {
+int DrivingState::getVehicleFollowingIdx(const double lane_d) {
   /* Find leading vehicle */
   double dist_veh_lead = DIST_VEH_LEAD_FOLLOW;
   int vehicle_lead = -1;
@@ -296,7 +283,7 @@ int DrivingState::getVehicleFollowingIdx(double lane_d) {
     }
     double dist_s = car_s_temp - kine.s;
     double dist_d = kine.d - lane_d;
-    if (fabs(dist_d) < 3.8) {
+    if (fabs(dist_d) < 1.5) {
       /* If vehicle in same lane*/
       if (0 <= dist_s && dist_s < dist_veh_lead) {
         /* If vehicle in behind and closer than any other vehicle below a distance threshold*/
