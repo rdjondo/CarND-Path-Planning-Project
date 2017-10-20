@@ -47,7 +47,7 @@ public:
 
 private:
   std::vector<SensorFusion> sensor_fusion;
-  RoadGeometry * road;
+  double road_max_s;
   State current_state;
   State next_state;
   double car_x;

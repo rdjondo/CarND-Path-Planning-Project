@@ -16,7 +16,6 @@
 #include "spline.h"
 #include "json.hpp"
 #include "points.h"
-#include "utils.h"
 #include "jmt.h"
 #include "trajectory.h"
 #include "optim_jmt.h"
@@ -68,11 +67,12 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
     double target_car_speed, double target_car_d, VectorPoints &next_val_xy) {
   // DONE: smoothen road path between the waypoints using Spline
 
-  // DONE: Calculate and control SDC vehicle speed and lane position
-  // Use a Jerk minimizing function to control the vehicle speed (use the two past points for continuity)
-  // Let's compute the Jerk minimization in the Frenet referential
+  // This calculates and control SDC vehicle speed and lane position
+  // Use a Jerk minimizing function to control the vehicle speed.
+  // I use the two past points for continuity.
+  // The Jerk minimization is computed in the Frenet referential
 
-  // TODO : Fix loop closure discontinuity
+  // DONE : Fix loop closure discontinuity
 
   const double delta_t = 0.02;
   static vector<double> coeff_s_old = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
@@ -149,8 +149,6 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
   vector<double> acc_poly_s = polyder(speed_poly_s);
   sk_double_dot = polyval(acc_poly_s, delay_t);
 
-
-  //TODO: Only allow for lane change if speed s_dot greater than minimal speed.
   double dT = target_car_d;
 
   /* Display estimated telemetry from old plan for Frenet D axis */

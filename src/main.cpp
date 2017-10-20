@@ -37,9 +37,12 @@ int main() {
   next_vals.clear();
   DoubleBuffer<VectorPoints> log;
 
+  /* NOTE: An alternative and much simpler implementation would be using an 
+  Async logging function instead of a Double buffering thread to log data around
+  this_thread::sleep_for at the end of the onMessage callback. */ 
   std::thread logging_thread(logWaypoints, max_loops, std::cref(next_vals), std::ref(log));
 
-  DrivingState planner(road) ;
+  DrivingState planner(road.getMaxS()) ;
 
   h.onMessage([&road, &planner, &map_waypoints_dx, &map_waypoints_dy,
   &next_vals, & log](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
@@ -104,11 +107,7 @@ int main() {
               next_vals.reserve(N_samples);
               next_vals.clear();
 
-              // TODO: Calculate time and distance to collision against other vehicles in Frenet
-
-              // TODO: Design cost function
-
-              // TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
+              // Define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
               VectorPoints previous_path;
               previous_path.setPoints(previous_path_x_json, previous_path_y_json);
 

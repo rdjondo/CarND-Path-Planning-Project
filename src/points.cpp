@@ -25,7 +25,6 @@
 #include "json.hpp"
 #include "spline.h"
 #include "points.h"
-#include "utils.h"
 
 using namespace std;
 
@@ -338,7 +337,7 @@ double polyval(const vector<double> &coeffs, double x) {
 }
 
 vector<double> polyder(const vector<double> &coeffs) {
-  /* Computing 1st derivative evaluation on the polynomial */
+  /* Computing 1st derivative of the polynomial */
   vector<double> Df_coeffs;
   if (coeffs.size() > 0) {
     Df_coeffs.reserve(coeffs.size() - 1);

@@ -12,7 +12,6 @@
 #include "json.hpp"
 #include "spline.h"
 #include "points.h"
-#include "utils.h"
 #include "planner.h"
 
 using namespace std;
@@ -24,9 +23,9 @@ static const double SMALL_VALUE = 1e-3;
 static const double LARGE_VALUE = 1e6;
 static const double VERY_LARGE_VALUE = 1e9;
 
-DrivingState::DrivingState(RoadGeometry & road_init) {
+DrivingState::DrivingState(double road_max_s_value) {
   sensor_fusion.clear();
-  road = &road_init;
+  road_max_s =  road_max_s_value;
   current_state = KEEP_LANE;
   next_state = KEEP_LANE;
   car_x = 0.0;
@@ -43,6 +42,7 @@ DrivingState::~DrivingState() {
 }
 
 
+// Calculate time and distance to collision against other vehicles in vicinity
 double DrivingState::getTimeToCollision(const size_t vehicle_idx){
   double time_to_collision = LARGE_VALUE;
   if (vehicle_idx >= 0) {
@@ -51,16 +51,22 @@ double DrivingState::getTimeToCollision(const size_t vehicle_idx){
     double delta_speed = car_speed - sqrt(veh.vx * veh.vx + veh.vy * veh.vy);
     time_to_collision = (dist) / (SMALL_VALUE + delta_speed);
 
-    const double forbidden_margin = 15.0;
-    if(fabs(dist)<forbidden_margin){
+    const double FORBIDDEN_DIST_MARGIN = 15.0;
+    const double FORBIDDEN_TIME_MARGIN = 1.0;
+    if(fabs(dist)<forbidden_dist_margin){
+      /* distance is too short : make time to collision  small */
       time_to_collision = SMALL_VALUE;
     } else if(time_to_collision < 0){
       time_to_collision = LARGE_VALUE;
+    }else if(time_to_collision<forbidden_time_margin){
+      /* time_to_collision is too short : make time to collision even smaller */
+      time_to_collision = SMALL_VALUE;
     }
   }
   return time_to_collision;
 }
 
+// Cost function for staying in current lane
 double DrivingState::getKeepLaneCost() {
   int vehicle_lead = getVehicleLeadIdx(car_d);
   double time_to_collision = getTimeToCollision(vehicle_lead);
@@ -70,6 +76,7 @@ double DrivingState::getKeepLaneCost() {
   return cost;
 }
 
+// Cost function for changing lane
 double DrivingState::getPrepareChangingLaneCost(const double lane_d) {
   double time_to_collision = LARGE_VALUE;
 
@@ -90,6 +97,7 @@ double DrivingState::getPrepareChangingLaneCost(const double lane_d) {
 
 double DrivingState::getChangingLeftCost() {
   const double lane_d = -4.0;
+  // Very large cost for changing to a lane that would be out of the road
   if (target_car_d + lane_d <= 0) {
     return VERY_LARGE_VALUE;
   } else {
@@ -99,6 +107,7 @@ double DrivingState::getChangingLeftCost() {
 
 double DrivingState::getChangingRightCost() {
   const double lane_d = 4.0;
+  // Very large cost for changing to a lane that would be out of the road 
   if (target_car_d + lane_d >= 12) {
     return VERY_LARGE_VALUE;
   } else {
@@ -138,7 +147,7 @@ void DrivingState::nextState() {
   /* Manage vehicle speed*/
   adaptativeCruiseControl();
 
-
+  /* Calculate costs for staying in current lane or changing lane */
   double keepLaneCost = getKeepLaneCost();
   cout<<endl;
   double changeLeftCost = getChangingLeftCost();
@@ -241,6 +250,9 @@ void DrivingState::setVehicleState(double car_x, double car_y, double car_s,
 
 /* TODO: move the constant inside the class*/
 static const double DIST_VEH_LEAD = 75;
+
+// Get the id for the closest following vehicle  
+//TODO: Merge common parts from getVehicleLeadIdx and getVehicleFollowingIdx 
 int DrivingState::getVehicleLeadIdx(const double lane_d) {
   /* Find leading vehicle */
   double dist_veh_lead = DIST_VEH_LEAD;
@@ -251,7 +263,7 @@ int DrivingState::getVehicleLeadIdx(const double lane_d) {
     double kine_s_temp = kine.s;
     if (car_s > 6000 && kine_s_temp < 1000) {
       /* Manage wrapping */
-      kine_s_temp += road->getMaxS();
+      kine_s_temp += road_max_s;
     }
     double dist_s = kine_s_temp - car_s;
     double dist_d = kine.d - lane_d;
@@ -269,6 +281,8 @@ int DrivingState::getVehicleLeadIdx(const double lane_d) {
 
 /* TODO: move the constant inside the class*/
 static const double DIST_VEH_LEAD_FOLLOW = 100;
+
+// Get the id for the closest following vehicle  
 int DrivingState::getVehicleFollowingIdx(const double lane_d) {
   /* Find leading vehicle */
   double dist_veh_lead = DIST_VEH_LEAD_FOLLOW;
@@ -279,7 +293,7 @@ int DrivingState::getVehicleFollowingIdx(const double lane_d) {
     double car_s_temp = car_s;
     if (kine.s > 6000 && car_s_temp < 1000) {
       /* Manage wrapping */
-      car_s_temp += road->getMaxS();
+      car_s_temp += road_max_s;
     }
     double dist_s = car_s_temp - kine.s;
     double dist_d = kine.d - lane_d;
