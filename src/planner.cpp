@@ -47,11 +47,11 @@ double DrivingState::getTimeToCollision(const size_t vehicle_idx){
   if (vehicle_idx >= 0) {
     SensorFusion veh = sensor_fusion[vehicle_idx];
     double dist = veh.s - car_s;
-    double delta_speed = car_speed - sqrt(veh.vx * veh.vx + veh.vy * veh.vy);
+    double delta_speed = car_speed/2.23694 - sqrt(veh.vx * veh.vx + veh.vy * veh.vy);
     time_to_collision = (dist) / (SMALL_VALUE + delta_speed);
 
-    const double FORBIDDEN_DIST_MARGIN = 15.0;
-    const double FORBIDDEN_TIME_MARGIN = 1.0;
+    const double FORBIDDEN_DIST_MARGIN = 15.0; // 15.0 metres is the acceptable limit
+    const double FORBIDDEN_TIME_MARGIN = 15.0; // 15 secs is the acceptable limit
     if(fabs(dist)<FORBIDDEN_DIST_MARGIN){
       /* distance is too short : make time to collision  small */
       time_to_collision = SMALL_VALUE;
@@ -129,7 +129,7 @@ void DrivingState::adaptativeCruiseControl() {
 
     if (delta_s < braking_margin) {
       // saturate the speed to MAX_SPEED for safety
-      double gain = 2;
+      double gain = 2.5;
       double speed_adjustment = gain * (braking_margin - delta_s);
       target_car_speed = max(0.0,
           min(leading_car_speed, leading_car_speed - speed_adjustment));
@@ -200,7 +200,6 @@ void DrivingState::nextState() {
       if (fabs(target_car_d - car_d) < 0.2) {
         next_state = KEEP_LANE;
       }
-
       break;
 
     case CHANGING_RIGHT:
@@ -211,7 +210,6 @@ void DrivingState::nextState() {
       if (fabs(target_car_d - car_d) < 0.2) {
         next_state = KEEP_LANE;
       }
-
       break;
 
     default:
@@ -296,7 +294,7 @@ int DrivingState::getVehicleFollowingIdx(const double lane_d) {
     }
     double dist_s = car_s_temp - kine.s;
     double dist_d = kine.d - lane_d;
-    if (fabs(dist_d) < 1.5) {
+    if (fabs(dist_d) < 2.0) {
       /* If vehicle in same lane*/
       if (0 <= dist_s && dist_s < dist_veh_lead) {
         /* If vehicle in behind and closer than any other vehicle below a distance threshold*/
