@@ -96,7 +96,7 @@ Functions:
 - optim_jmt_affine: this function optimises the jerk for the s coordinate in the Frenet system. 
 Optimize final distance position s start and s final so that the jerk is defined by an affine function. This type of affine jerk seems to reduce the envelope of the jerk and the acceleration. The speed tends do not overshoot in this configuration. This was found in my quick experiments but would need to be proven formally.
 The routine uses a concept of virtual acceleration. The equivalent virtual acceleration corresponds to
-the equivalent acceleration that would satisfy the speed constraints.
+the equivalent average acceleration that would satisfy the motion time constraints.
 
 - optim_jmt_quadratic : this function optimises the jerk for the d coordinate in the Frenet system is the quadratic Jerk version of optim_jmt_affine. The function solves for a minimum quadratic Jerk polynomial and uses a concept of virtual speed, similar to the virtual acceleration concept used for the optim_jmt_affine.
 
