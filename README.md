@@ -5,7 +5,7 @@ Self-Driving Car Engineer Nanodegree Program
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases).
 
 ### Goals
-In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 50 m/s^3.
+In this project your goal is to safely navigate around a virtual highway with other traffic that is driving below the 50 MPH speed limit. The car's uses idealised but delayed localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car tries to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 50 m/s^3.
 
 #### The map of the highway is in data/highway_map.txt
 Each waypoint in the list contains  [x,y,s,dx,dy] values. x and y are the waypoint's map coordinate position, the s value is the distance along the road to get to that waypoint in meters, the dx and dy values define the unit normal vector pointing outward of the highway loop.
@@ -66,9 +66,56 @@ the path has processed since last time.
 
 ## Details
 
-1. The car uses a perfect controller and will visit every (x,y) point it recieves in the list every .02 seconds. The units for the (x,y) points are in meters and the spacing of the points determines the speed of the car. The vector going from a point to the next point in the list dictates the angle of the car. Acceleration both in the tangential and normal directions is measured along with the jerk, the rate of change of total Acceleration. The (x,y) point paths that the planner recieves should not have a total acceleration that goes over 10 m/s^2, also the jerk should not go over 50 m/s^3. (NOTE: As this is BETA, these requirements might change. Also currently jerk is over a .02 second interval, it would probably be better to average total acceleration over 1 second and measure jerk from that.
+This car controller is a simple prototype for a highway controller.
+Its implementation is both simple and naive and I see many areas that would benefit from improvement.
+For example, a more robust implementation would implement a probalistic and predictive behavioural model of the other vehicles on the road and base the driving decisions on this predictive model.
+Currently the model only considers a first-order estimation of the future state of the vehicles in Frenet coordinates. 
 
-2. There will be some latency between the simulator running and the path planner returning a path, with optimized code usually its not very long maybe just 1-3 time steps. During this delay the simulator will continue using points that it was last given, because of this its a good idea to store the last points you have used so you can have a smooth transition. previous_path_x, and previous_path_y can be helpful for this transition since they show the last points given to the simulator controller with the processed points already removed. You would either return a path that extends this previous path or make sure to create a new path that has a smooth transition with this last path.
+Now, let's describe the implementation of the controller.
+
+### main.cpp
+Load up map values for waypoint's x,y,s and d normalized normal vectors read from a file.
+The RoadGeometry object handles waypoint map and handles the road geometry.
+
+The file instantiate double buffer to save a first few points. The data is logged using a Double buffering thread that runs concurrently to the main thread.
+
+The main function instanciates the DrivingState class. This class is responsible for taking driving decisions depending on other vehicles in vicinity.
+
+The main class uses a WebSocket callback to communicate with the simulator to provide the future trajectory points and to retrieve Sensor Fusion data.
+
+### trajectory.cpp
+Functions:
+- ideal_trajectory: this function implements an ideal trajectory that was useful for debugging trajectory closing-loop issues.
+- my_trajectory: this function implements a jerk minimized trajectory parametrized by desired speed and accelerations.
+This function calculates and control the Self Driving vehicle speed and lane position using a Jerk minimizing function to control the vehicle speed. It uses the previously calculated for implementing a continous path. The Jerk minimization is computed in the Frenet coordinate system.
+The function also tries to estimate the time lag between the previously sent datapoints and the current step.
+my_trajectory calls functions in optim_jmt.cpp
+
+### optim_jmt.cpp
+Functions:
+- optim_jmt_affine: this function optimises the jerk for the s coordinate in the Frenet system. 
+Optimize final distance position s start and s final so that the jerk is defined by an affine function. This type of affine jerk seems to reduce the envelope of the jerk and the acceleration. The speed tends do not overshoot in this configuration. This was found in my quick experiments but would need to be proven formally.
+The routine uses a concept of virtual acceleration. The equivalent virtual acceleration corresponds to
+the equivalent acceleration that would satisfy the speed constraints.
+
+- optim_jmt_quadratic : this function optimises the jerk for the d coordinate in the Frenet system is the quadratic Jerk version of optim_jmt_affine. The function solves for a minimum quadratic Jerk polynomial and uses a concept of virtual speed, similar to the virtual acceleration concept used for the optim_jmt_affine.
+
+
+### jmt.cpp
+Functions:
+- JMT and  JMT_affine: : uses the C++ Matrix calculation Eigen library to compute the functions as described in optim_jmt.cpp
+
+### planner.cpp
+Implements the class DrivingState. This class decides the finite state machine that computes the driving decisions that the vehicle takes on the highway as a function of the other driving agents.
+The main metric used to evaluate the cost of the decision is the estimated time to collision to vehicles in vicinity.
+
+### utils.cpp
+Implements the vehicles position points logger using a concurrent thread that uses double buffering.
+[Example of a glitchy speed profile debugged thanks to my double buffered logger](script/need_to_adjust_new_points.png)
+
+
+### points.cpp
+Implement some simple data structures to perform some calculations on waypoints.
 
 ## Tips
 
