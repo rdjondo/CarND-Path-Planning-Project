@@ -111,7 +111,7 @@ The main metric used to evaluate the cost of the decision is the estimated time 
 
 ### utils.cpp
 Implements the vehicles position points logger using a concurrent thread that uses double buffering.
-[Example of a glitchy speed profile debugged thanks to my double buffered logger](script/need_to_adjust_new_points.png)
+[Example of a glitchy speed profile debugged thanks to my double buffered logger](scripts/need_to_adjust_new_points.png)
 
 
 ### points.cpp
