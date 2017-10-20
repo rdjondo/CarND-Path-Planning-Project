@@ -22,6 +22,9 @@
 
 using namespace std;
 
+/** This function implement an ideal trajectory that was useful for debugging 
+*  trajectory closing-loop issues.
+*/
 static void ideal_trajectory(RoadGeometry &road, VectorPoints &previous_path,
     const int N_samples, double car_s, double car_d, double car_speed,
     VectorPoints &next_vals) {
@@ -62,17 +65,17 @@ static void ideal_trajectory(RoadGeometry &road, VectorPoints &previous_path,
   }
 }
 
+  /** my_trajectory: smoothen road path between the waypoints using JMT
+   * Jerk Minimized trajectory
+  */
 static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
     const int N_samples, double car_s, double car_d, double car_speed,
     double target_car_speed, double target_car_d, VectorPoints &next_val_xy) {
-  // DONE: smoothen road path between the waypoints using Spline
 
   // This calculates and control SDC vehicle speed and lane position
   // Use a Jerk minimizing function to control the vehicle speed.
-  // I use the two past points for continuity.
-  // The Jerk minimization is computed in the Frenet referential
-
-  // DONE : Fix loop closure discontinuity
+  // It uses the previously calculated polynomial for continuity.
+  // The Jerk minimization is computed in the Frenet coordinate system
 
   const double delta_t = 0.02;
   static vector<double> coeff_s_old = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
@@ -138,8 +141,7 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
     coeff_s_old[1] = sk_dot;
   }
 
-  /* New time this is an ugly hyper-parameter optimization.
-   * 13 is a "magic" number that compensates for the computation lag */
+  /* New time for estimating the computation lag */
   double delay_t = ((double)init_index ) * delta_t;
 
   /* Display estimated telemetry from old plan Frenet S axis  */
@@ -160,17 +162,15 @@ static void my_trajectory(RoadGeometry &road, VectorPoints &previous_path,
   dk_double_dot = polyval(acc_poly_d, delay_t);
 
 
-  double virtual_acceleration = 1.5; /* virtual acceleration in m/s^2 */
-
+  double virtual_acceleration = 2.0; /* virtual acceleration in m/s^2 */
   vector<double> coeff_s = optim_jmt_affine(sk, sk_dot, sk_double_dot, sT_dot,
       sT_double_dot, virtual_acceleration);
 
-  double virtual_speed = 0.5; /* virtual speed in m/s */
-  const double T = max(4.0, min(20.0, fabs(dk - dT)/ virtual_speed));
+  double virtual_speed = 0.6; /* virtual speed in m/s */
   vector<double> coeff_d = optim_jmt_quadratic( dk,  dk_dot,  dk_double_dot,
-      dT,  dT_dot,  dT_double_dot, T);
+      dT,  dT_dot,  dT_double_dot, virtual_speed);
 
-
+  /* Remember calculated motion polynomial for continuity in next round */
   coeff_s_old = coeff_s;
   coeff_d_old = coeff_d;
 

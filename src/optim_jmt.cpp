@@ -23,7 +23,10 @@ using namespace std;
  * This is found in my quick experiments but
  * would need to be proven formally :-)
  * The routine uses a concept of virtual acceleration.
- *
+ * The equivalent virtual acceleration corresponds to
+ * the equivalent acceleration that would satisfy the
+ * speed constraints
+ * 
  * sk is the initial lateral position
  * sk_dot is the initial speed
  * sk_dot is the initial acceleration
@@ -36,9 +39,7 @@ std::vector<double> optim_jmt_affine(double sk, double sk_dot,
     double sk_double_dot, double sT_dot, double sT_double_dot,
     double virtual_acceleration) {
 
-  /* The equivalent virtual acceleration corresponds to
-   * the equivalent acceleration that would satisfy the
-   * speed constraints */
+  /* Avoids divisions by zero */
   if(fabs(virtual_acceleration)<1e-2){
     virtual_acceleration = 1.0; /* m/s^2 */
   }
@@ -70,11 +71,17 @@ std::vector<double> optim_jmt_affine(double sk, double sk_dot,
  * T is the final time of the planned motion
  */
 std::vector<double> optim_jmt_quadratic(double dk, double dk_dot, double dk_double_dot,
-    double dT, double dT_dot, double dT_double_dot, double T){
+    double dT, double dT_dot, double dT_double_dot, double virtual_speed){
 
   vector<double> start = { dk, dk_dot, dk_double_dot };
   vector<double> end = { dT, dT_dot, dT_double_dot };
 
+  /* Avoids divisions by zero */
+  if(fabs(virtual_speed)<1e-2){
+    virtual_speed = 1e-2; /* m/s */
+  }
+  
+  const double T = max(4.0, min(20.0, fabs(dk - dT)/ virtual_speed));
 
   vector<double> coeff_d = JMT(start, end, T);
   return coeff_d;

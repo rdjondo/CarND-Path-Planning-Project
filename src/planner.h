@@ -34,7 +34,7 @@ public:
     CHANGING_RIGHT,
   };
 
-  DrivingState(RoadGeometry & road_init);
+  DrivingState(double  road_max_s);
   virtual ~DrivingState();
 
   void nextState();

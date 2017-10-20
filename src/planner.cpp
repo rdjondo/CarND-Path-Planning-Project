@@ -16,8 +16,7 @@
 
 using namespace std;
 
-/* TODO: move the constant inside the class*/
-static const double MAX_SPEED = 20.2;
+static const double MAX_SPEED = 20.4;
 
 static const double SMALL_VALUE = 1e-3;
 static const double LARGE_VALUE = 1e6;
@@ -53,12 +52,12 @@ double DrivingState::getTimeToCollision(const size_t vehicle_idx){
 
     const double FORBIDDEN_DIST_MARGIN = 15.0;
     const double FORBIDDEN_TIME_MARGIN = 1.0;
-    if(fabs(dist)<forbidden_dist_margin){
+    if(fabs(dist)<FORBIDDEN_DIST_MARGIN){
       /* distance is too short : make time to collision  small */
       time_to_collision = SMALL_VALUE;
     } else if(time_to_collision < 0){
       time_to_collision = LARGE_VALUE;
-    }else if(time_to_collision<forbidden_time_margin){
+    }else if(time_to_collision<FORBIDDEN_TIME_MARGIN){
       /* time_to_collision is too short : make time to collision even smaller */
       time_to_collision = SMALL_VALUE;
     }

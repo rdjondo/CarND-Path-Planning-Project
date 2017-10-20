@@ -28,13 +28,15 @@ int main() {
   vector<double> map_waypoints_dx;
   vector<double> map_waypoints_dy;
 
-  // Waypoint map to read from
+  // Waypoint map to read from file
   loadMap(map_waypoints, map_waypoints_s, map_waypoints_dx, map_waypoints_dy);
   RoadGeometry road(map_waypoints, map_waypoints_s);
 
   int max_loops = 500;
   VectorPoints next_vals;
   next_vals.clear();
+
+  // Instantiate double buffer to save a first few points
   DoubleBuffer<VectorPoints> log;
 
   /* NOTE: An alternative and much simpler implementation would be using an 
